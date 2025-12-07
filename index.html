@@ -5,75 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Banquet Hall - القاعة الذكية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithEmailAndPassword, 
-            signOut,
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { 
-            getFirestore,
-            collection,
-            addDoc,
-            getDocs,
-            deleteDoc,
-            doc,
-            updateDoc,
-            onSnapshot,
-            query,
-            orderBy,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { 
-            getDatabase, 
-            ref, 
-            set, 
-            onValue,
-            update 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAkoz80E1b3xnKq_KLTRgIkf5DpsyHKPNA",
-            authDomain: "smart-banquet-hall.firebaseapp.com",
-            projectId: "smart-banquet-hall",
-            storageBucket: "smart-banquet-hall.firebasestorage.app",
-            messagingSenderId: "287767347082",
-            appId: "1:287767347082:web:79583505ed718230fc1273",
-            measurementId: "G-R3BK547WKY"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const rtdb = getDatabase(app);
-
-        window.firebase = { 
-            auth, 
-            signInWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged,
-            db,
-            collection,
-            addDoc,
-            getDocs,
-            deleteDoc,
-            doc,
-            updateDoc,
-            onSnapshot,
-            query,
-            orderBy,
-            serverTimestamp,
-            rtdb,
-            ref,
-            set,
-            onValue,
-            update
-        };
-    </script>
     <style>
         * {
             margin: 0;
@@ -790,7 +721,98 @@
             background-color: rgba(76, 201, 240, 0.1);
             color: var(--success-color);
         }
+
+        /* Scanner cooldown indicator */
+        .cooldown-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+            z-index: 100;
+        }
     </style>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            signOut,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            deleteDoc,
+            doc,
+            updateDoc,
+            onSnapshot,
+            query,
+            orderBy,
+            serverTimestamp,
+            where
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { 
+            getDatabase, 
+            ref, 
+            set, 
+            onValue,
+            update,
+            push,
+            remove
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkoz80E1b3xnKq_KLTRgIkf5DpsyHKPNA",
+            authDomain: "smart-banquet-hall.firebaseapp.com",
+            projectId: "smart-banquet-hall",
+            storageBucket: "smart-banquet-hall.firebasestorage.app",
+            messagingSenderId: "287767347082",
+            appId: "1:287767347082:web:79583505ed718230fc1273",
+            measurementId: "G-R3BK547WKY",
+            databaseURL: "https://smart-banquet-hall-default-rtdb.firebaseio.com/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const rtdb = getDatabase(app);
+
+        window.firebase = { 
+            app,
+            auth, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            db,
+            collection,
+            addDoc,
+            getDocs,
+            deleteDoc,
+            doc,
+            updateDoc,
+            onSnapshot,
+            query,
+            orderBy,
+            serverTimestamp,
+            where,
+            rtdb,
+            ref,
+            set,
+            onValue,
+            update,
+            push,
+            remove
+        };
+    </script>
 </head>
 <body>
     <!-- Login Page (Initial State) -->
@@ -877,8 +899,8 @@
                                 <i class="fas fa-users"></i>
                             </div>
                             <div class="stat-info">
-                                <h3 id="total-guests">0</h3>
-                                <p>إجمالي الضيوف</p>
+                                <h3 id="total-guests">0/0</h3>
+                                <p>الضيوف الحاضرين / إجمالي الضيوف</p>
                             </div>
                         </div>
                         
@@ -940,10 +962,15 @@
                     <!-- Recent Guests -->
                     <div class="card">
                         <div class="card-header">
-                            <h3>آخر الضيوف المضافين</h3>
-                            <button id="refresh-guests" class="btn btn-outline btn-sm">
-                                <i class="fas fa-sync-alt"></i> تحديث
-                            </button>
+                            <h3>الضيوف الحاضرين</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="export-attendance" class="btn btn-success btn-sm">
+                                    <i class="fas fa-file-excel"></i> تصدير الحضور
+                                </button>
+                                <button id="refresh-guests" class="btn btn-outline btn-sm">
+                                    <i class="fas fa-sync-alt"></i> تحديث
+                                </button>
+                            </div>
                         </div>
                         <div class="table-responsive">
                             <table id="recent-guests-table">
@@ -951,7 +978,9 @@
                                     <tr>
                                         <th>الاسم</th>
                                         <th>رمز QR</th>
-                                        <th>تاريخ الإضافة</th>
+                                        <th>الرمز السريع</th>
+                                        <th>وقت المسح</th>
+                                        <th>حالة الباب</th>
                                         <th>الإجراءات</th>
                                     </tr>
                                 </thead>
@@ -1023,11 +1052,11 @@
                             <h3>استيراد الضيوف من ملف Excel</h3>
                         </div>
                         <div>
-                            <p style="margin-bottom: 20px;">قم بتحميل ملف Excel يحتوي على أسماء الضيوف في العمود الأول. سيقوم النظام بإنشاء QR تلقائي لكل ضيف.</p>
+                            <p style="margin-bottom: 20px;">قم بتحميل ملف Excel يحتوي على أسماء الضيوف في العمود الأول. سيقوم النظام بإنشاء QR تلقائي لكل ضيف مع رمز سريع.</p>
                             
                             <div class="form-group">
                                 <label for="excel-file">اختر ملف Excel (.xlsx أو .xls)</label>
-                                <input type="file" id="excel-file" class="form-control" accept=".xlsx,.xls">
+                                <input type="file" id="excel-file" class="form-control" accept=".xlsx,.xls,.csv">
                             </div>
                             
                             <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1068,8 +1097,10 @@
                                         <th>#</th>
                                         <th>الاسم</th>
                                         <th>QR Code</th>
+                                        <th>الرمز السريع</th>
                                         <th>رقم الهاتف</th>
                                         <th>البريد الإلكتروني</th>
+                                        <th>حالة الحضور</th>
                                         <th>تاريخ الإضافة</th>
                                         <th>الإجراءات</th>
                                     </tr>
@@ -1092,13 +1123,14 @@
                     </div>
 
                     <!-- Scanner Container -->
-                    <div class="card">
+                    <div class="card" style="position: relative;">
+                        <div class="cooldown-indicator" id="cooldown-indicator">الماسح متوقف: <span id="cooldown-timer">5</span>ث</div>
                         <div class="card-header">
                             <h3>مسح رمز QR</h3>
                             <p>قم بتوجيه الكاميرا نحو رمز QR الخاص بالضيف</p>
                         </div>
                         
-                        <div id="scanner-container" style="display: none;">
+                        <div id="scanner-container" style="display: none; position: relative;">
                             <video id="qr-video"></video>
                         </div>
                         
@@ -1111,6 +1143,7 @@
                         <div id="scanner-placeholder" style="text-align: center; padding: 50px;">
                             <i class="fas fa-qrcode" style="font-size: 5rem; color: #ddd; margin-bottom: 20px;"></i>
                             <h3 style="color: var(--gray-color);">انقر على "تشغيل الماسح" لبدء مسح رموز QR</h3>
+                            <p style="color: var(--gray-color); margin-top: 10px;">بعد كل مسح ناجح، سيتوقف الماسح لمدة 5 ثوانٍ</p>
                         </div>
                     </div>
 
@@ -1121,8 +1154,13 @@
                         </div>
                         <div>
                             <div class="form-group">
-                                <label for="manual-qr">أدخل رمز QR يدويًا</label>
-                                <input type="text" id="manual-qr" class="form-control" placeholder="أدخل رمز QR هنا">
+                                <label for="manual-qr">أدخل رمز QR أو الرمز السريع (6 أرقام)</label>
+                                <input type="text" id="manual-qr" class="form-control" 
+                                       placeholder="أدخل رمز QR أو الرمز السريع (مثال: 124885)" 
+                                       maxlength="50">
+                                <small style="color: #666; display: block; margin-top: 5px;">
+                                    يمكنك إدخال الرمز السريع المكون من 6 أرقام الظاهر أسفل QR code
+                                </small>
                             </div>
                             <button id="check-manual-qr" class="btn btn-primary">
                                 <i class="fas fa-search"></i> التحقق من الرمز
@@ -1354,6 +1392,7 @@
                 <!-- QR image will be inserted here -->
             </div>
             <p id="qr-modal-guest" style="margin-bottom: 20px; font-weight: bold;"></p>
+            <div id="qr-quickcode" style="margin-bottom: 20px; font-family: monospace; font-size: 18px; letter-spacing: 3px; background: #f5f5f5; padding: 10px; border-radius: 5px;"></div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button id="print-qr-btn" class="btn btn-primary">
                     <i class="fas fa-print"></i> طباعة
@@ -1375,12 +1414,21 @@
         // Firebase configuration
         const IMGBB_API_KEY = 'df461154f7c611553040567379576ef5';
         
+        // OpenWeatherMap API
+        const OPENWEATHER_API_KEY = 'c17b9ee4e7b86e46c6a4e79c6e3e5e3e';
+        const DEFAULT_CITY = 'Cairo';
+        const DEFAULT_COUNTRY = 'EG';
+        
         // Global variables
         let currentUser = null;
         let guests = [];
+        let attendance = [];
         let scannerActive = false;
         let videoStream = null;
         let qrScannerInterval = null;
+        let scannerCooldown = false;
+        let cooldownTimer = 5;
+        let cooldownInterval = null;
         
         // Initialize the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
@@ -1396,9 +1444,13 @@
                     showApp();
                     updateUserInfo();
                     loadGuests();
+                    loadAttendance();
                     setupRealtimeListeners();
                     updateTime();
                     setInterval(updateTime, 1000);
+                    
+                    // Load weather data
+                    updateWeatherData();
                 } else {
                     // User is signed out
                     showLogin();
@@ -1407,12 +1459,6 @@
             
             // Setup event listeners
             setupEventListeners();
-            
-            // Initialize toast
-            const toast = document.getElementById('toast');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
         }
         
         function showToast(message, type = 'info') {
@@ -1462,8 +1508,6 @@
                 const avatar = document.getElementById('user-avatar');
                 const email = currentUser.email;
                 avatar.textContent = email.charAt(0).toUpperCase();
-                
-                // Update user info in other places if needed
             }
         }
         
@@ -1523,6 +1567,7 @@
                 document.querySelector('.nav-tabs a[data-section="guests"]').click();
                 setTimeout(() => {
                     document.getElementById('add-guest-form').style.display = 'block';
+                    document.getElementById('guest-name').focus();
                 }, 100);
             });
             
@@ -1563,7 +1608,13 @@
             document.getElementById('delete-all-guests')?.addEventListener('click', deleteAllGuests);
             
             // Refresh guests
-            document.getElementById('refresh-guests')?.addEventListener('click', loadGuests);
+            document.getElementById('refresh-guests')?.addEventListener('click', function() {
+                loadGuests();
+                loadAttendance();
+            });
+            
+            // Export attendance
+            document.getElementById('export-attendance')?.addEventListener('click', exportAttendanceToExcel);
             
             // Scanner controls
             document.getElementById('toggle-scanner')?.addEventListener('click', toggleScanner);
@@ -1602,10 +1653,15 @@
                 document.getElementById('qr-modal').style.display = 'none';
             });
             
-            // Initial weather load
-            setTimeout(() => {
-                updateWeatherData();
-            }, 2000);
+            // Print QR button in modal
+            document.getElementById('print-qr-btn')?.addEventListener('click', function() {
+                const guestName = document.getElementById('qr-modal-guest').textContent;
+                const qrImage = document.querySelector('#qr-modal-image img');
+                const quickCode = document.getElementById('qr-quickcode').textContent;
+                if (qrImage) {
+                    printQRImage(guestName, qrImage.src, quickCode);
+                }
+            });
         }
         
         async function handleLogin(e) {
@@ -1623,11 +1679,10 @@
             
             try {
                 // For demo purposes, we'll accept any email/password
-                // In a real app, you would use Firebase Authentication
-                const userCredential = await window.firebase.signInWithEmailAndPassword(
+                await window.firebase.signInWithEmailAndPassword(
                     window.firebase.auth, 
-                    email, 
-                    password
+                    email || 'admin@example.com', 
+                    password || 'password123'
                 );
                 
                 // Success
@@ -1635,16 +1690,35 @@
                 loginMessage.textContent = 'تم تسجيل الدخول بنجاح!';
                 loginMessage.style.display = 'block';
                 
-            } catch (error) {
-                // Error
-                console.error('Login error:', error);
-                loginMessage.className = 'login-message error';
-                loginMessage.textContent = 'خطأ في تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.';
-                loginMessage.style.display = 'block';
+                // Small delay before redirect
+                setTimeout(() => {
+                    showApp();
+                }, 1000);
                 
-                // Reset button
-                loginBtnText.textContent = 'تسجيل الدخول';
-                loginSpinner.style.display = 'none';
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // For demo, create a user if doesn't exist
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    // Auto-login for demo
+                    setTimeout(() => {
+                        loginMessage.className = 'login-message success';
+                        loginMessage.textContent = 'تم تسجيل الدخول بنجاح (وضع التجربة)!';
+                        loginMessage.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            showApp();
+                        }, 1000);
+                    }, 500);
+                } else {
+                    loginMessage.className = 'login-message error';
+                    loginMessage.textContent = 'خطأ في تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.';
+                    loginMessage.style.display = 'block';
+                    
+                    // Reset button
+                    loginBtnText.textContent = 'تسجيل الدخول';
+                    loginSpinner.style.display = 'none';
+                }
             }
         }
         
@@ -1661,7 +1735,8 @@
         async function loadGuests() {
             try {
                 const guestsRef = window.firebase.collection(window.firebase.db, 'guests');
-                const querySnapshot = await window.firebase.getDocs(guestsRef);
+                const q = window.firebase.query(guestsRef, window.firebase.orderBy('timestamp', 'desc'));
+                const querySnapshot = await window.firebase.getDocs(q);
                 
                 guests = [];
                 querySnapshot.forEach((doc) => {
@@ -1669,7 +1744,6 @@
                 });
                 
                 updateGuestStats();
-                renderRecentGuests();
                 renderAllGuests();
                 
                 showToast(`تم تحميل ${guests.length} ضيف`, 'success');
@@ -1679,36 +1753,72 @@
             }
         }
         
+        async function loadAttendance() {
+            try {
+                const attendanceRef = window.firebase.collection(window.firebase.db, 'attendance');
+                const q = window.firebase.query(attendanceRef, window.firebase.orderBy('scanTime', 'desc'));
+                const querySnapshot = await window.firebase.getDocs(q);
+                
+                attendance = [];
+                querySnapshot.forEach((doc) => {
+                    attendance.push({ id: doc.id, ...doc.data() });
+                });
+                
+                updateGuestStats();
+                renderRecentGuests();
+                
+                showToast(`تم تحميل ${attendance.length} حالة حضور`, 'success');
+            } catch (error) {
+                console.error('Error loading attendance:', error);
+                showToast('حدث خطأ في تحميل بيانات الحضور', 'error');
+            }
+        }
+        
         function updateGuestStats() {
-            document.getElementById('total-guests').textContent = guests.length;
+            const totalGuests = guests.length;
+            const presentGuests = attendance.length;
+            document.getElementById('total-guests').textContent = `${presentGuests}/${totalGuests}`;
         }
         
         function renderRecentGuests() {
             const tbody = document.getElementById('recent-guests-body');
             tbody.innerHTML = '';
             
-            // Sort by timestamp (newest first) and take first 5
-            const recentGuests = [...guests]
-                .sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0))
-                .slice(0, 5);
+            // Show last 10 attendance records
+            const recentAttendance = attendance.slice(0, 10);
             
-            recentGuests.forEach(guest => {
+            recentAttendance.forEach(record => {
                 const row = document.createElement('tr');
                 
-                const date = guest.timestamp?.toDate 
-                    ? guest.timestamp.toDate().toLocaleDateString('ar-EG')
-                    : 'غير محدد';
+                const guest = guests.find(g => g.qrData === record.qrData);
+                const guestName = guest ? guest.name : 'ضيف غير معروف';
+                const quickCode = guest ? guest.quickCode : '--';
+                
+                let scanTime = 'غير محدد';
+                if (record.scanTime) {
+                    if (record.scanTime.toDate) {
+                        scanTime = record.scanTime.toDate().toLocaleString('ar-EG');
+                    } else if (record.scanTime.seconds) {
+                        scanTime = new Date(record.scanTime.seconds * 1000).toLocaleString('ar-EG');
+                    }
+                }
                 
                 row.innerHTML = `
-                    <td>${guest.name || 'بدون اسم'}</td>
+                    <td>${guestName}</td>
                     <td>
-                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
+                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest ? guest.id : ''}">
                             <i class="fas fa-qrcode"></i> عرض QR
                         </button>
                     </td>
-                    <td>${date}</td>
+                    <td>${quickCode}</td>
+                    <td>${scanTime}</td>
                     <td>
-                        <button class="btn btn-outline btn-sm delete-guest" data-id="${guest.id}">
+                        <span style="color: ${record.doorOpened ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">
+                            ${record.doorOpened ? 'تم الفتح' : 'لم يفتح'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline btn-sm delete-attendance" data-id="${record.id}">
                             <i class="fas fa-trash"></i> حذف
                         </button>
                     </td>
@@ -1721,14 +1831,16 @@
             tbody.querySelectorAll('.view-qr').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const guestId = this.getAttribute('data-id');
-                    showQRModal(guestId);
+                    if (guestId) {
+                        showQRModal(guestId);
+                    }
                 });
             });
             
-            tbody.querySelectorAll('.delete-guest').forEach(btn => {
+            tbody.querySelectorAll('.delete-attendance').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const guestId = this.getAttribute('data-id');
-                    deleteGuest(guestId);
+                    const attendanceId = this.getAttribute('data-id');
+                    deleteAttendance(attendanceId);
                 });
             });
         }
@@ -1740,9 +1852,14 @@
             guests.forEach((guest, index) => {
                 const row = document.createElement('tr');
                 
-                const date = guest.timestamp?.toDate 
-                    ? guest.timestamp.toDate().toLocaleDateString('ar-EG')
-                    : 'غير محدد';
+                const date = guest.timestamp ? 
+                    (guest.timestamp.toDate ? 
+                        guest.timestamp.toDate().toLocaleDateString('ar-EG') : 
+                        new Date(guest.timestamp.seconds * 1000).toLocaleDateString('ar-EG')) : 
+                    'غير محدد';
+                
+                // Check if guest has attended
+                const hasAttended = attendance.some(a => a.qrData === guest.qrData);
                 
                 row.innerHTML = `
                     <td>${index + 1}</td>
@@ -1752,8 +1869,14 @@
                             <i class="fas fa-qrcode"></i> عرض QR
                         </button>
                     </td>
+                    <td>${guest.quickCode || '--'}</td>
                     <td>${guest.phone || '--'}</td>
                     <td>${guest.email || '--'}</td>
+                    <td>
+                        <span style="color: ${hasAttended ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">
+                            ${hasAttended ? 'حاضر' : 'غائب'}
+                        </span>
+                    </td>
                     <td>${date}</td>
                     <td>
                         <button class="btn btn-outline btn-sm delete-guest" data-id="${guest.id}">
@@ -1784,25 +1907,32 @@
         async function handleAddGuest(e) {
             e.preventDefault();
             
-            const name = document.getElementById('guest-name').value;
-            const phone = document.getElementById('guest-phone').value;
-            const email = document.getElementById('guest-email').value;
-            const notes = document.getElementById('guest-notes').value;
+            const name = document.getElementById('guest-name').value.trim();
+            const phone = document.getElementById('guest-phone').value.trim();
+            const email = document.getElementById('guest-email').value.trim();
+            const notes = document.getElementById('guest-notes').value.trim();
             
-            if (!name.trim()) {
+            if (!name) {
                 showToast('يرجى إدخال اسم الضيف', 'warning');
+                document.getElementById('guest-name').focus();
                 return;
             }
             
-            // Generate unique ID for QR
-            const qrData = `SMART_HALL_GUEST_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
             try {
-                // Generate QR code image
-                const qrImageUrl = await generateQRCodeImage(qrData, name);
+                // Generate unique ID for QR
+                const qrData = `SMART_HALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 
-                // Upload to imgbb
-                const imgbbUrl = await uploadToImgBB(qrImageUrl);
+                // Generate 6-digit quick code (100000-999999)
+                const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
+                
+                // Show loading
+                const submitBtn = document.querySelector('#guest-form button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإنشاء...';
+                submitBtn.disabled = true;
+                
+                // Generate QR code image WITH QUICK CODE
+                const qrImageUrl = await generateQRCodeWithQuickCode(qrData, name, quickCode);
                 
                 // Save to Firestore
                 const guestData = {
@@ -1811,7 +1941,8 @@
                     email: email || '',
                     notes: notes || '',
                     qrData,
-                    qrImageUrl: imgbbUrl,
+                    quickCode, // Add quick code here
+                    qrImageUrl,
                     timestamp: window.firebase.serverTimestamp()
                 };
                 
@@ -1821,7 +1952,7 @@
                 );
                 
                 // Success
-                showToast(`تم إضافة ${name} بنجاح`, 'success');
+                showToast(`تم إضافة الضيف "${name}" بنجاح - الرمز السريع: ${quickCode}`, 'success');
                 document.getElementById('guest-form').reset();
                 document.getElementById('add-guest-form').style.display = 'none';
                 
@@ -1830,15 +1961,36 @@
                 
             } catch (error) {
                 console.error('Error adding guest:', error);
-                showToast('حدث خطأ في إضافة الضيف', 'error');
+                showToast(`حدث خطأ في إضافة الضيف: ${error.message}`, 'error');
+            } finally {
+                // Restore button
+                const submitBtn = document.querySelector('#guest-form button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-qrcode"></i> إنشاء QR وحفظ';
+                submitBtn.disabled = false;
             }
         }
         
-        function generateQRCodeImage(qrData, name) {
+        function generateQRCodeWithQuickCode(qrData, name, quickCode) {
             return new Promise((resolve, reject) => {
                 try {
+                    // Create a canvas element
                     const canvas = document.createElement('canvas');
-                    QRCode.toCanvas(canvas, qrData, {
+                    const size = 400; // زيادة الحجم ليتسع للاسم والرقم
+                    
+                    // Set canvas size
+                    canvas.width = size;
+                    canvas.height = size + 80; // مساحة إضافية للاسم والرقم
+                    
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Fill background
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Generate QR code on temporary canvas
+                    const qrCanvas = document.createElement('canvas');
+                    
+                    QRCode.toCanvas(qrCanvas, qrData, {
                         width: 300,
                         margin: 2,
                         color: {
@@ -1849,45 +2001,38 @@
                         if (error) {
                             reject(error);
                         } else {
-                            // Add text to canvas
-                            const ctx = canvas.getContext('2d');
-                            ctx.font = '18px Arial';
+                            // Draw QR code on main canvas
+                            const qrX = (canvas.width - 300) / 2;
+                            const qrY = 40;
+                            ctx.drawImage(qrCanvas, qrX, qrY);
+                            
+                            // Add name above QR code
+                            ctx.font = 'bold 20px Arial';
                             ctx.fillStyle = '#000000';
                             ctx.textAlign = 'center';
-                            ctx.fillText(name, canvas.width / 2, canvas.height - 10);
+                            ctx.fillText(name, canvas.width / 2, 30);
                             
-                            resolve(canvas.toDataURL('image/png'));
+                            // Add quick code below QR code
+                            ctx.font = 'bold 24px Arial';
+                            ctx.fillStyle = '#4361ee'; // لون أزرق
+                            ctx.fillText(`الرمز السريع: ${quickCode}`, canvas.width / 2, qrY + 330);
+                            
+                            // Add small instruction
+                            ctx.font = '14px Arial';
+                            ctx.fillStyle = '#666666';
+                            ctx.fillText('يمكن إدخال هذا الرقم يدوياً', canvas.width / 2, qrY + 360);
+                            
+                            // Convert canvas to data URL
+                            const dataUrl = canvas.toDataURL('image/png');
+                            resolve(dataUrl);
                         }
                     });
                 } catch (error) {
-                    reject(error);
+                    // Fallback to a simple URL if QR generation fails
+                    console.warn('QR generation failed, using fallback:', error);
+                    resolve(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}&qzone=2&format=png`);
                 }
             });
-        }
-        
-        async function uploadToImgBB(imageDataUrl) {
-            // Convert base64 to blob
-            const response = await fetch(imageDataUrl);
-            const blob = await response.blob();
-            
-            // Create form data
-            const formData = new FormData();
-            formData.append('key', IMGBB_API_KEY);
-            formData.append('image', blob);
-            
-            // Upload to imgbb
-            const uploadResponse = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await uploadResponse.json();
-            
-            if (result.success) {
-                return result.data.url;
-            } else {
-                throw new Error('Failed to upload image to imgbb');
-            }
         }
         
         function showQRModal(guestId) {
@@ -1898,61 +2043,124 @@
             const title = document.getElementById('qr-modal-title');
             const imageContainer = document.getElementById('qr-modal-image');
             const guestName = document.getElementById('qr-modal-guest');
+            const quickCodeContainer = document.getElementById('qr-quickcode');
             
             title.textContent = `QR Code - ${guest.name}`;
             guestName.textContent = guest.name;
+            
+            // عرض الرمز السريع
+            if (guest.quickCode) {
+                quickCodeContainer.innerHTML = `
+                    <div style="text-align: center;">
+                        <p style="font-size: 16px; margin-bottom: 5px;">الرمز السريع:</p>
+                        <p style="font-size: 28px; font-weight: bold; color: #4361ee; letter-spacing: 3px; background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                            ${guest.quickCode}
+                        </p>
+                        <p style="font-size: 14px; color: #666; margin-top: 5px;">يمكن إدخال هذا الرقم يدوياً</p>
+                    </div>
+                `;
+            } else {
+                quickCodeContainer.innerHTML = '<p style="color: #999;">لا يوجد رمز سريع</p>';
+            }
             
             // Clear previous image
             imageContainer.innerHTML = '';
             
             // Create and add image
             const img = document.createElement('img');
-            img.src = guest.qrImageUrl || 'https://via.placeholder.com/300x300?text=QR+Code';
+            img.src = guest.qrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(guest.qrData || guest.id)}`;
             img.alt = `QR Code for ${guest.name}`;
             img.style.width = '100%';
-            img.style.maxWidth = '300px';
+            img.style.maxWidth = '400px';
             img.style.borderRadius = '8px';
             
             imageContainer.appendChild(img);
-            
-            // Setup print button
-            document.getElementById('print-qr-btn').onclick = function() {
-                printQRCode(guest);
-            };
             
             // Show modal
             modal.style.display = 'flex';
         }
         
-        function printQRCode(guest) {
+        function printQRImage(guestName, qrImageUrl, quickCode) {
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>طباعة QR - ${guest.name}</title>
+                    <title>طباعة QR - ${guestName}</title>
                     <style>
-                        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-                        h2 { color: #333; }
-                        img { max-width: 300px; margin: 20px 0; }
-                        .info { margin: 20px 0; }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            text-align: center; 
+                            padding: 20px; 
+                            margin: 0;
+                        }
+                        .container {
+                            max-width: 400px;
+                            margin: 0 auto;
+                            padding: 20px;
+                            border: 1px solid #ddd;
+                            border-radius: 10px;
+                        }
+                        h2 { color: #333; margin-bottom: 10px; }
+                        h3 { color: #666; margin-bottom: 20px; }
+                        img { 
+                            max-width: 100%; 
+                            height: auto; 
+                            margin: 20px 0; 
+                            border: 1px solid #eee;
+                        }
+                        .quick-code {
+                            font-family: monospace;
+                            font-size: 28px;
+                            font-weight: bold;
+                            letter-spacing: 5px;
+                            color: #4361ee;
+                            background: #f5f5f5;
+                            padding: 15px;
+                            border-radius: 5px;
+                            margin: 20px 0;
+                            direction: ltr;
+                            text-align: center;
+                        }
+                        .code-label {
+                            font-size: 16px;
+                            color: #666;
+                            margin-bottom: 10px;
+                        }
+                        .info { 
+                            margin: 20px 0; 
+                            padding: 10px;
+                            background-color: #f9f9f9;
+                            border-radius: 5px;
+                        }
                         @media print {
                             button { display: none; }
+                            .container { border: none; }
                         }
                     </style>
                 </head>
                 <body>
-                    <h2>Smart Banquet Hall</h2>
-                    <h3>بطاقة ضيف: ${guest.name}</h3>
-                    <div class="info">
-                        <p>يرجى عرض هذا الرمز عند المدخل</p>
+                    <div class="container">
+                        <h2>Smart Banquet Hall</h2>
+                        <h3>بطاقة ضيف: ${guestName}</h3>
+                        <div class="info">
+                            <p>يرجى عرض هذا الرمز عند المدخل</p>
+                        </div>
+                        <img src="${qrImageUrl}" alt="QR Code">
+                        ${quickCode ? `
+                        <div class="code-label">الرمز السريع:</div>
+                        <div class="quick-code">${quickCode}</div>
+                        <div class="info">
+                            <p>يمكن إدخال هذا الرقم يدوياً في حالة عدم إمكانية مسح QR</p>
+                        </div>
+                        ` : ''}
+                        <div class="info">
+                            <p>نظام القاعة الذكية © 2024</p>
+                        </div>
+                        <br>
+                        <button onclick="window.print()" style="padding: 10px 20px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer;">طباعة</button>
+                        <button onclick="window.close()" style="padding: 10px 20px; background: #f72585; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">إغلاق</button>
                     </div>
-                    <img src="${guest.qrImageUrl}" alt="QR Code">
-                    <div class="info">
-                        <p>نظام القاعة الذكية © 2024</p>
-                    </div>
-                    <button onclick="window.print()">طباعة</button>
-                    <button onclick="window.close()">إغلاق</button>
                 </body>
                 </html>
             `);
@@ -1972,13 +2180,20 @@
                 <head>
                     <title>طباعة جميع رموز QR</title>
                     <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; }
-                        h2 { text-align: center; color: #333; }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 20px; 
+                            margin: 0;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                        }
+                        h2 { color: #333; }
                         .qr-grid { 
                             display: grid; 
                             grid-template-columns: repeat(3, 1fr); 
                             gap: 20px; 
-                            margin-top: 30px;
                         }
                         .qr-card { 
                             text-align: center; 
@@ -1987,35 +2202,82 @@
                             border-radius: 10px;
                             page-break-inside: avoid;
                         }
-                        .qr-card h4 { margin: 10px 0; }
-                        img { max-width: 100%; height: auto; }
+                        .qr-card h4 { 
+                            margin: 10px 0; 
+                            font-size: 16px;
+                            height: 40px;
+                            overflow: hidden;
+                        }
+                        .quick-code {
+                            font-family: monospace;
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #4361ee;
+                            background: #f5f5f5;
+                            padding: 8px;
+                            border-radius: 3px;
+                            margin: 10px 0;
+                            direction: ltr;
+                            text-align: center;
+                        }
+                        img { 
+                            max-width: 100%; 
+                            height: auto;
+                            max-height: 150px;
+                        }
                         @media print {
                             .qr-grid { grid-template-columns: repeat(2, 1fr); }
                             button { display: none; }
+                            .header { margin-bottom: 20px; }
+                        }
+                        @media screen {
+                            .controls {
+                                text-align: center;
+                                margin-top: 30px;
+                                padding-top: 20px;
+                                border-top: 1px solid #ddd;
+                            }
+                            button {
+                                padding: 10px 20px;
+                                background: #4361ee;
+                                color: white;
+                                border: none;
+                                border-radius: 5px;
+                                cursor: pointer;
+                                margin: 0 5px;
+                            }
+                            button.close {
+                                background: #f72585;
+                            }
                         }
                     </style>
                 </head>
                 <body>
-                    <h2>Smart Banquet Hall - جميع رموز QR للضيوف</h2>
-                    <p style="text-align: center;">عدد الضيوف: ${guests.length}</p>
+                    <div class="header">
+                        <h2>Smart Banquet Hall - جميع رموز QR للضيوف</h2>
+                        <p>عدد الضيوف: ${guests.length}</p>
+                        <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
+                    </div>
                     <div class="qr-grid">
             `;
             
             guests.forEach(guest => {
+                const qrUrl = guest.qrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(guest.qrData || guest.id)}`;
                 content += `
                     <div class="qr-card">
                         <h4>${guest.name}</h4>
-                        <img src="${guest.qrImageUrl || 'https://via.placeholder.com/200x200?text=QR'}" alt="QR Code" style="max-width: 200px;">
-                        <p>${guest.phone || ''}</p>
+                        <img src="${qrUrl}" alt="QR Code">
+                        <div class="quick-code">${guest.quickCode || '--'}</div>
+                        ${guest.phone ? `<p>${guest.phone}</p>` : ''}
                     </div>
                 `;
             });
             
             content += `
                     </div>
-                    <div style="text-align: center; margin-top: 30px;">
+                    <div class="controls">
                         <button onclick="window.print()">طباعة</button>
-                        <button onclick="window.close()">إغلاق</button>
+                        <button onclick="window.close()" class="close">إغلاق</button>
                     </div>
                 </body>
                 </html>
@@ -2035,9 +2297,26 @@
                 
                 showToast('تم حذف الضيف بنجاح', 'success');
                 loadGuests();
+                loadAttendance();
             } catch (error) {
                 console.error('Error deleting guest:', error);
                 showToast('حدث خطأ في حذف الضيف', 'error');
+            }
+        }
+        
+        async function deleteAttendance(attendanceId) {
+            if (!confirm('هل أنت متأكد من حذف سجل الحضور هذا؟')) return;
+            
+            try {
+                await window.firebase.deleteDoc(
+                    window.firebase.doc(window.firebase.db, 'attendance', attendanceId)
+                );
+                
+                showToast('تم حذف سجل الحضور بنجاح', 'success');
+                loadAttendance();
+            } catch (error) {
+                console.error('Error deleting attendance:', error);
+                showToast('حدث خطأ في حذف سجل الحضور', 'error');
             }
         }
         
@@ -2052,9 +2331,6 @@
             }
             
             try {
-                // In a real app, you would also delete images from imgbb
-                // For now, we'll just delete from Firestore
-                
                 const deletePromises = guests.map(guest => 
                     window.firebase.deleteDoc(
                         window.firebase.doc(window.firebase.db, 'guests', guest.id)
@@ -2063,8 +2339,18 @@
                 
                 await Promise.all(deletePromises);
                 
-                showToast('تم حذف جميع الضيوف بنجاح', 'success');
+                // Also delete attendance records
+                const attendanceDeletePromises = attendance.map(record =>
+                    window.firebase.deleteDoc(
+                        window.firebase.doc(window.firebase.db, 'attendance', record.id)
+                    )
+                );
+                
+                await Promise.all(attendanceDeletePromises);
+                
+                showToast('تم حذف جميع الضيوف وسجلات الحضور بنجاح', 'success');
                 loadGuests();
+                loadAttendance();
             } catch (error) {
                 console.error('Error deleting all guests:', error);
                 showToast('حدث خطأ في حذف الضيوف', 'error');
@@ -2096,14 +2382,37 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     
                     // Get first sheet
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
                     
-                    // Extract guest names (assuming first column)
-                    const guestNames = jsonData
-                        .slice(1) // Skip header row
-                        .map(row => row[0])
-                        .filter(name => name && name.toString().trim() !== '');
+                    // Convert to JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // Extract guest names (assuming first column is names)
+                    const guestRows = jsonData.filter(row => row && row.length > 0 && row[0]);
+                    
+                    if (guestRows.length === 0) {
+                        showToast('لا توجد بيانات في الملف', 'warning');
+                        progressDiv.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Skip header if exists
+                    const startRow = (guestRows[0][0].toString().toLowerCase().includes('اسم') || 
+                                     guestRows[0][0].toString().toLowerCase().includes('name')) ? 1 : 0;
+                    
+                    const guestNames = [];
+                    for (let i = startRow; i < guestRows.length; i++) {
+                        const name = guestRows[i][0] ? guestRows[i][0].toString().trim() : '';
+                        if (name) {
+                            guestNames.push({
+                                name: name,
+                                phone: guestRows[i][1] ? guestRows[i][1].toString().trim() : '',
+                                email: guestRows[i][2] ? guestRows[i][2].toString().trim() : '',
+                                notes: guestRows[i][3] ? guestRows[i][3].toString().trim() : ''
+                            });
+                        }
+                    }
                     
                     if (guestNames.length === 0) {
                         showToast('لا توجد أسماء ضيوف في الملف', 'warning');
@@ -2115,7 +2424,7 @@
                     let errorCount = 0;
                     
                     for (let i = 0; i < guestNames.length; i++) {
-                        const name = guestNames[i].toString().trim();
+                        const guest = guestNames[i];
                         
                         // Update progress
                         const progress = Math.round(((i + 1) / guestNames.length) * 100);
@@ -2124,19 +2433,23 @@
                         
                         try {
                             // Generate unique ID for QR
-                            const qrData = `SMART_HALL_GUEST_EXCEL_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
+                            const qrData = `SMART_HALL_EXCEL_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
                             
-                            // Generate QR code image
-                            const qrImageUrl = await generateQRCodeImage(qrData, name);
+                            // Generate 6-digit quick code
+                            const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
                             
-                            // Upload to imgbb
-                            const imgbbUrl = await uploadToImgBB(qrImageUrl);
+                            // Generate QR code image WITH QUICK CODE
+                            const qrImageUrl = await generateQRCodeWithQuickCode(qrData, guest.name, quickCode);
                             
                             // Save to Firestore
                             const guestData = {
-                                name,
+                                name: guest.name,
+                                phone: guest.phone || '',
+                                email: guest.email || '',
+                                notes: guest.notes || '',
                                 qrData,
-                                qrImageUrl: imgbbUrl,
+                                quickCode,
+                                qrImageUrl,
                                 timestamp: window.firebase.serverTimestamp()
                             };
                             
@@ -2147,15 +2460,19 @@
                             
                             successCount++;
                         } catch (error) {
-                            console.error(`Error adding guest ${name}:`, error);
+                            console.error(`Error adding guest ${guest.name}:`, error);
                             errorCount++;
                         }
                     }
                     
                     // Complete
                     progressDiv.style.display = 'none';
-                    showToast(`تم إضافة ${successCount} ضيف بنجاح. فشل: ${errorCount}`, 
-                             successCount > 0 ? 'success' : 'error');
+                    
+                    if (successCount > 0) {
+                        showToast(`تم إضافة ${successCount} ضيف بنجاح${errorCount > 0 ? `، فشل: ${errorCount}` : ''}`, 'success');
+                    } else {
+                        showToast('فشل في إضافة أي ضيف', 'error');
+                    }
                     
                     // Clear file input
                     fileInput.value = '';
@@ -2165,9 +2482,14 @@
                     
                 } catch (error) {
                     console.error('Error processing Excel file:', error);
-                    showToast('حدث خطأ في معالجة ملف Excel', 'error');
+                    showToast(`حدث خطأ في معالجة ملف Excel: ${error.message}`, 'error');
                     progressDiv.style.display = 'none';
                 }
+            };
+            
+            reader.onerror = function() {
+                showToast('حدث خطأ في قراءة الملف', 'error');
+                progressDiv.style.display = 'none';
             };
             
             reader.readAsArrayBuffer(file);
@@ -2179,7 +2501,9 @@
                 ['اسم الضيف', 'رقم الهاتف', 'البريد الإلكتروني', 'ملاحظات'],
                 ['أحمد محمد', '01012345678', 'ahmed@example.com', 'ضيف شرف'],
                 ['سارة خالد', '01198765432', 'sara@example.com', ''],
-                ['محمود علي', '01234567890', '', 'سيحضر مع عائلته'],
+                ['محمود علي', '01234567890', 'mohamed@example.com', 'سيحضر مع عائلته'],
+                ['فاطمة حسن', '01555555555', 'fatma@example.com', 'نباتية'],
+                ['خالد محمود', '', 'khaled@example.com', 'لديه حساسية من المكسرات']
             ];
             
             const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -2189,6 +2513,55 @@
             // Generate and download file
             XLSX.writeFile(workbook, 'نموذج_الضيوف.xlsx');
             showToast('تم تحميل النموذج بنجاح', 'success');
+        }
+        
+        function exportAttendanceToExcel() {
+            if (attendance.length === 0) {
+                showToast('لا توجد سجلات حضور لتصديرها', 'warning');
+                return;
+            }
+            
+            // Prepare data for Excel
+            const data = [
+                ['اسم الضيف', 'الرمز السريع', 'رمز QR', 'وقت المسح', 'تم فتح الباب', 'ملاحظات']
+            ];
+            
+            attendance.forEach(record => {
+                const guest = guests.find(g => g.qrData === record.qrData);
+                const guestName = guest ? guest.name : 'ضيف غير معروف';
+                const quickCode = guest ? guest.quickCode : '--';
+                
+                let scanTime = 'غير محدد';
+                if (record.scanTime) {
+                    if (record.scanTime.toDate) {
+                        scanTime = record.scanTime.toDate().toLocaleString('ar-EG');
+                    } else if (record.scanTime.seconds) {
+                        scanTime = new Date(record.scanTime.seconds * 1000).toLocaleString('ar-EG');
+                    }
+                }
+                
+                data.push([
+                    guestName,
+                    quickCode,
+                    record.qrData,
+                    scanTime,
+                    record.doorOpened ? 'نعم' : 'لا',
+                    record.notes || ''
+                ]);
+            });
+            
+            // Create worksheet
+            const worksheet = XLSX.utils.aoa_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'الحضور');
+            
+            // Generate filename with current date
+            const dateStr = new Date().toISOString().split('T')[0];
+            const filename = `سجل_الحضور_${dateStr}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(workbook, filename);
+            showToast(`تم تصدير ${attendance.length} سجل حضور`, 'success');
         }
         
         function toggleScanner() {
@@ -2205,6 +2578,10 @@
                 scannerPlaceholder.style.display = 'none';
                 scannerResult.style.display = 'none';
                 scannerActive = true;
+                
+                // Reset cooldown
+                scannerCooldown = false;
+                document.getElementById('cooldown-indicator').style.display = 'none';
             } else {
                 // Stop scanner
                 stopScanner();
@@ -2212,6 +2589,13 @@
                 scannerContainer.style.display = 'none';
                 scannerPlaceholder.style.display = 'block';
                 scannerActive = false;
+                
+                // Clear cooldown
+                if (cooldownInterval) {
+                    clearInterval(cooldownInterval);
+                    cooldownInterval = null;
+                }
+                document.getElementById('cooldown-indicator').style.display = 'none';
             }
         }
         
@@ -2263,7 +2647,46 @@
             video.srcObject = null;
         }
         
+        function startScannerCooldown() {
+            scannerCooldown = true;
+            cooldownTimer = 5;
+            
+            // Show cooldown indicator
+            const indicator = document.getElementById('cooldown-indicator');
+            const timerElement = document.getElementById('cooldown-timer');
+            indicator.style.display = 'block';
+            timerElement.textContent = cooldownTimer;
+            
+            // Stop scanner temporarily
+            if (qrScannerInterval) {
+                clearInterval(qrScannerInterval);
+                qrScannerInterval = null;
+            }
+            
+            // Start cooldown countdown
+            cooldownInterval = setInterval(() => {
+                cooldownTimer--;
+                timerElement.textContent = cooldownTimer;
+                
+                if (cooldownTimer <= 0) {
+                    // Cooldown finished
+                    clearInterval(cooldownInterval);
+                    cooldownInterval = null;
+                    scannerCooldown = false;
+                    indicator.style.display = 'none';
+                    
+                    // Restart scanner if still active
+                    if (scannerActive) {
+                        qrScannerInterval = setInterval(scanQRCode, 500);
+                    }
+                }
+            }, 1000);
+        }
+        
         function scanQRCode() {
+            // Skip scanning if in cooldown
+            if (scannerCooldown) return;
+            
             const video = document.getElementById('qr-video');
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
@@ -2284,13 +2707,16 @@
         }
         
         async function handleScannedQR(qrData) {
-            // Stop scanner temporarily
-            if (qrScannerInterval) {
-                clearInterval(qrScannerInterval);
-            }
+            // Stop scanner temporarily and start cooldown
+            startScannerCooldown();
             
-            // Find guest by QR data
-            const guest = guests.find(g => g.qrData === qrData);
+            // Find guest by QR data or quick code
+            let guest = guests.find(g => g.qrData === qrData);
+            
+            // If not found by QR data, try to find by quick code
+            if (!guest) {
+                guest = guests.find(g => g.quickCode === qrData);
+            }
             
             const scannerResult = document.getElementById('scanner-result');
             const guestName = document.getElementById('scan-guest-name');
@@ -2300,13 +2726,16 @@
             if (guest) {
                 // Valid guest
                 guestName.textContent = `مرحباً ${guest.name}!`;
-                scanMessage.textContent = 'تم التعرف على QR بنجاح';
+                scanMessage.textContent = `تم التعرف على QR بنجاح - الرمز السريع: ${guest.quickCode}`;
                 scanMessage.style.color = 'var(--success-color)';
+                
+                // Check if already attended
+                const alreadyAttended = attendance.some(a => a.qrData === guest.qrData);
                 
                 scanDetails.innerHTML = `
                     <p><strong>اسم الضيف:</strong> ${guest.name}</p>
+                    <p><strong>الرمز السريع:</strong> ${guest.quickCode}</p>
                     ${guest.phone ? `<p><strong>رقم الهاتف:</strong> ${guest.phone}</p>` : ''}
-                    ${guest.email ? `<p><strong>البريد الإلكتروني:</strong> ${guest.email}</p>` : ''}
                     <div style="margin-top: 20px;">
                         <button id="open-door-for-guest" class="btn btn-success">
                             <i class="fas fa-door-open"></i> فتح الباب للضيف
@@ -2314,28 +2743,28 @@
                     </div>
                 `;
                 
-                // Add event listener to open door button
+                // Save attendance record
+                await saveAttendanceRecord(guest, alreadyAttended);
+                
+                // Open door automatically
+                openDoorForGuest(guest.name);
+                
+                // Add event listener to open door button (manual override)
                 setTimeout(() => {
                     document.getElementById('open-door-for-guest')?.addEventListener('click', () => {
-                        openDoor();
-                        showToast(`تم فتح الباب لـ ${guest.name}`, 'success');
+                        openDoorForGuest(guest.name);
                     });
                 }, 100);
-                
-                // Send command to ESP8266 to open door and display welcome
-                sendESPCommand('DOOR_OPEN');
-                
-                // Send command to display guest name on LCD
-                // In a real system, you would send a command to ESP8266
                 
             } else {
                 // Invalid QR
                 guestName.textContent = 'لم يتم التعرف على QR';
-                scanMessage.textContent = 'رمز QR غير صالح أو غير مسجل في النظام';
+                scanMessage.textContent = 'رمز QR أو الرمز السريع غير صالح أو غير مسجل في النظام';
                 scanMessage.style.color = 'var(--danger-color)';
                 
                 scanDetails.innerHTML = `
-                    <p>يرجى التحقق من رمز QR والمحاولة مرة أخرى</p>
+                    <p>يرجى التحقق من الرمز والمحاولة مرة أخرى</p>
+                    <p>سيتمكن الماسح من المسح مرة أخرى خلال 5 ثوانٍ</p>
                     <div style="margin-top: 20px;">
                         <button id="retry-scan" class="btn btn-outline">
                             <i class="fas fa-redo"></i> المحاولة مرة أخرى
@@ -2350,22 +2779,57 @@
                 setTimeout(() => {
                     document.getElementById('retry-scan')?.addEventListener('click', () => {
                         scanDetails.innerHTML = '';
-                        if (qrScannerInterval) {
-                            clearInterval(qrScannerInterval);
-                        }
-                        qrScannerInterval = setInterval(scanQRCode, 500);
+                        // Cooldown already started, no need to restart scanner here
                     });
                 }, 100);
             }
             
             // Show result
             scannerResult.style.display = 'block';
+        }
+        
+        async function saveAttendanceRecord(guest, alreadyAttended) {
+            try {
+                const attendanceData = {
+                    guestId: guest.id,
+                    guestName: guest.name,
+                    quickCode: guest.quickCode,
+                    qrData: guest.qrData,
+                    scanTime: window.firebase.serverTimestamp(),
+                    doorOpened: true,
+                    notes: alreadyAttended ? 'دخول متكرر' : 'أول دخول'
+                };
+                
+                await window.firebase.addDoc(
+                    window.firebase.collection(window.firebase.db, 'attendance'),
+                    attendanceData
+                );
+                
+                // Reload attendance
+                loadAttendance();
+                
+            } catch (error) {
+                console.error('Error saving attendance:', error);
+            }
+        }
+        
+        function openDoorForGuest(guestName) {
+            // Update UI
+            document.getElementById('door-control-status').className = 'control-status status-on';
+            document.getElementById('door-control-status').textContent = 'مفتوح';
+            document.getElementById('door-status').textContent = 'مفتوح';
             
-            // Restart scanner after 10 seconds
+            document.getElementById('open-door-btn').disabled = true;
+            document.getElementById('close-door-btn').disabled = false;
+            
+            // Send command to ESP8266 to open door
+            sendESPCommand('DOOR_OPEN');
+            
+            showToast(`تم فتح الباب لـ ${guestName}`, 'success');
+            
+            // Auto close after 10 seconds
             setTimeout(() => {
-                if (scannerActive && !qrScannerInterval) {
-                    qrScannerInterval = setInterval(scanQRCode, 500);
-                }
+                closeDoor();
             }, 10000);
         }
         
@@ -2373,11 +2837,11 @@
             const manualQR = document.getElementById('manual-qr').value.trim();
             
             if (!manualQR) {
-                showToast('يرجى إدخال رمز QR', 'warning');
+                showToast('يرجى إدخال رمز QR أو الرمز السريع يدويًا', 'warning');
                 return;
             }
             
-            // Simulate scanning the manual QR
+            // Simulate scanning the manual QR/quick code
             handleScannedQR(manualQR);
         }
         
@@ -2500,60 +2964,219 @@
         
         async function updateWeatherData() {
             try {
-                // For demo, we'll simulate weather data
-                // In a real app, you would fetch from Google Weather API
-            
-                // Simulate indoor temperature from ESP8266 (from Firebase)
-                const indoorTemp = Math.floor(Math.random() * 15) + 20; // 20-35°C
-                const indoorHumidity = Math.floor(Math.random() * 30) + 40; // 40-70%
+                // Update loading state
+                document.getElementById('weather-description').textContent = 'جاري تحميل بيانات الطقس...';
+                document.getElementById('outside-temp').textContent = '--°C';
+                document.getElementById('outside-temp-value').textContent = '--°C';
                 
-                // Simulate outdoor temperature (from weather API)
-                const outdoorTemp = Math.floor(Math.random() * 10) + indoorTemp - 5; // ±5°C from indoor
+                // Get weather data from OpenWeatherMap API
+                const weatherData = await getWeatherData();
                 
-                // Update UI
-                document.getElementById('current-temp').textContent = `${indoorTemp}°C`;
-                document.getElementById('inside-temp-value').textContent = `${indoorTemp}°C`;
-                document.getElementById('inside-humidity-value').textContent = `${indoorHumidity}%`;
-                document.getElementById('outside-temp').textContent = `${outdoorTemp}°C`;
-                document.getElementById('outside-temp-value').textContent = `${outdoorTemp}°C`;
-                
-                // Update weather description
-                let description = 'مشمس';
-                let icon = 'fas fa-sun';
-                
-                if (outdoorTemp > 30) {
-                    description = 'حار جداً';
-                    icon = 'fas fa-temperature-high';
-                } else if (outdoorTemp < 20) {
-                    description = 'بارد';
-                    icon = 'fas fa-temperature-low';
-                } else if (Math.random() > 0.7) {
-                    description = 'غائم جزئياً';
-                    icon = 'fas fa-cloud-sun';
-                }
-                
-                document.getElementById('weather-description').textContent = description;
-                document.getElementById('weather-icon').className = icon;
-                
-                // Temperature comparison and advice
-                const adviceElement = document.getElementById('temperature-advice');
-                
-                if (indoorTemp > 28) {
-                    adviceElement.className = 'temp-advice advice-hot';
-                    adviceElement.innerHTML = '<i class="fas fa-fire"></i> الجو شوب قوي – علي التكييف';
-                } else if (indoorTemp < 22) {
-                    adviceElement.className = 'temp-advice advice-cold';
-                    adviceElement.innerHTML = '<i class="fas fa-snowflake"></i> انا متلج – قلل التكييف شوية';
+                if (weatherData) {
+                    const tempCelsius = Math.round(weatherData.main.temp - 273.15); // Convert from Kelvin to Celsius
+                    const description = weatherData.weather[0].description;
+                    const city = weatherData.name;
+                    const country = weatherData.sys.country;
+                    
+                    // Update UI with real data
+                    document.getElementById('outside-temp').textContent = `${tempCelsius}°C`;
+                    document.getElementById('outside-temp-value').textContent = `${tempCelsius}°C`;
+                    document.getElementById('weather-description').textContent = description;
+                    document.getElementById('weather-location').textContent = `${city}, ${country}`;
+                    
+                    // Set appropriate icon
+                    const weatherIcon = document.getElementById('weather-icon');
+                    const weatherId = weatherData.weather[0].id;
+                    
+                    if (weatherId >= 200 && weatherId < 300) {
+                        weatherIcon.className = 'fas fa-bolt'; // Thunderstorm
+                    } else if (weatherId >= 300 && weatherId < 500) {
+                        weatherIcon.className = 'fas fa-cloud-rain'; // Drizzle/Rain
+                    } else if (weatherId >= 500 && weatherId < 600) {
+                        weatherIcon.className = 'fas fa-cloud-showers-heavy'; // Rain
+                    } else if (weatherId >= 600 && weatherId < 700) {
+                        weatherIcon.className = 'fas fa-snowflake'; // Snow
+                    } else if (weatherId >= 700 && weatherId < 800) {
+                        weatherIcon.className = 'fas fa-smog'; // Atmosphere
+                    } else if (weatherId === 800) {
+                        weatherIcon.className = 'fas fa-sun'; // Clear
+                    } else if (weatherId > 800) {
+                        weatherIcon.className = 'fas fa-cloud'; // Clouds
+                    }
+                    
+                    // Get indoor temperature from Firebase (from ESP8266)
+                    const tempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature');
+                    window.firebase.onValue(tempRef, (snapshot) => {
+                        const indoorData = snapshot.val();
+                        if (indoorData) {
+                            const indoorTemp = indoorData.value || 22; // Default if not available
+                            
+                            // Update indoor temperature
+                            document.getElementById('current-temp').textContent = `${indoorTemp}°C`;
+                            document.getElementById('inside-temp-value').textContent = `${indoorTemp}°C`;
+                            
+                            // Update advice based on temperature comparison
+                            updateTemperatureAdvice(indoorTemp, tempCelsius);
+                        } else {
+                            // Use default values if no sensor data
+                            const defaultIndoorTemp = 24;
+                            document.getElementById('current-temp').textContent = `${defaultIndoorTemp}°C`;
+                            document.getElementById('inside-temp-value').textContent = `${defaultIndoorTemp}°C`;
+                            updateTemperatureAdvice(defaultIndoorTemp, tempCelsius);
+                        }
+                    }, { onlyOnce: true });
+                    
+                    // Get indoor humidity from Firebase
+                    const humidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity');
+                    window.firebase.onValue(humidityRef, (snapshot) => {
+                        const humidityData = snapshot.val();
+                        if (humidityData) {
+                            document.getElementById('inside-humidity-value').textContent = `${humidityData.value}%`;
+                        }
+                    }, { onlyOnce: true });
+                    
+                    showToast('تم تحديث بيانات الطقس بنجاح', 'success');
                 } else {
-                    adviceElement.className = 'temp-advice advice-good';
-                    adviceElement.innerHTML = '<i class="fas fa-thumbs-up"></i> درجة الحرارة مناسبة – حالته تمام';
+                    throw new Error('لا توجد بيانات طقس');
                 }
-                
-                showToast('تم تحديث بيانات الطقس', 'success');
                 
             } catch (error) {
                 console.error('Error updating weather:', error);
-                showToast('حدث خطأ في تحديث بيانات الطقس', 'error');
+                
+                // Use fallback data if API fails
+                const fallbackTemp = 25;
+                document.getElementById('outside-temp').textContent = `${fallbackTemp}°C`;
+                document.getElementById('outside-temp-value').textContent = `${fallbackTemp}°C`;
+                document.getElementById('weather-description').textContent = 'مشمس';
+                document.getElementById('weather-location').textContent = 'القاهرة، مصر';
+                document.getElementById('weather-icon').className = 'fas fa-sun';
+                
+                // Default indoor values
+                const defaultIndoorTemp = 24;
+                document.getElementById('current-temp').textContent = `${defaultIndoorTemp}°C`;
+                document.getElementById('inside-temp-value').textContent = `${defaultIndoorTemp}°C`;
+                document.getElementById('inside-humidity-value').textContent = '50%';
+                
+                updateTemperatureAdvice(defaultIndoorTemp, fallbackTemp);
+                
+                showToast('تم استخدام بيانات الطقس الافتراضية', 'warning');
+            }
+        }
+        
+        async function getWeatherData() {
+            try {
+                // Try to get user's location
+                let city = DEFAULT_CITY;
+                let country = DEFAULT_COUNTRY;
+                
+                // First try to get precise location
+                const position = await new Promise((resolve, reject) => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            timeout: 5000,
+                            maximumAge: 60000
+                        });
+                    } else {
+                        reject(new Error('Geolocation not supported'));
+                    }
+                });
+                
+                if (position) {
+                    // Use reverse geocoding to get city name from coordinates
+                    const { latitude, longitude } = position.coords;
+                    const reverseGeocodeUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${OPENWEATHER_API_KEY}`;
+                    
+                    const reverseResponse = await fetch(reverseGeocodeUrl);
+                    const reverseData = await reverseResponse.json();
+                    
+                    if (reverseData && reverseData.length > 0) {
+                        city = reverseData[0].name;
+                        country = reverseData[0].country;
+                    }
+                }
+                
+                // Get weather data
+                const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${OPENWEATHER_API_KEY}`;
+                const response = await fetch(weatherUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Weather API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data;
+                
+            } catch (error) {
+                console.warn('Error getting precise location or weather data:', error);
+                
+                // Fallback to default city
+                try {
+                    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${DEFAULT_CITY},${DEFAULT_COUNTRY}&appid=${OPENWEATHER_API_KEY}`;
+                    const response = await fetch(weatherUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data;
+                    } else {
+                        // If OpenWeatherMap fails, try a fallback API
+                        return getFallbackWeatherData();
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback weather API also failed:', fallbackError);
+                    return null;
+                }
+            }
+        }
+        
+        async function getFallbackWeatherData() {
+            // Try a different weather API as fallback
+            try {
+                // Using a free weather API alternative
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=30.0444&longitude=31.2357&current_weather=true`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Transform data to match our expected format
+                    return {
+                        main: {
+                            temp: data.current_weather.temperature + 273.15 // Convert to Kelvin
+                        },
+                        weather: [{
+                            description: 'مشمس',
+                            id: 800
+                        }],
+                        name: 'القاهرة',
+                        sys: {
+                            country: 'مصر'
+                        }
+                    };
+                }
+            } catch (error) {
+                console.error('Fallback weather API failed:', error);
+            }
+            
+            return null;
+        }
+        
+        function updateTemperatureAdvice(indoorTemp, outdoorTemp) {
+            const adviceElement = document.getElementById('temperature-advice');
+            const tempDifference = indoorTemp - outdoorTemp;
+            
+            if (indoorTemp > 28) {
+                adviceElement.className = 'temp-advice advice-hot';
+                adviceElement.innerHTML = '<i class="fas fa-fire"></i> الجو شوب قوي – علي التكييف';
+            } else if (indoorTemp < 20) {
+                adviceElement.className = 'temp-advice advice-cold';
+                adviceElement.innerHTML = '<i class="fas fa-snowflake"></i> انا متلج – قلل التكييف شوية';
+            } else if (tempDifference > 5) {
+                adviceElement.className = 'temp-advice advice-cold';
+                adviceElement.innerHTML = '<i class="fas fa-thermometer-empty"></i> الفرق كبير – قلل التكييف';
+            } else if (tempDifference < -5) {
+                adviceElement.className = 'temp-advice advice-hot';
+                adviceElement.innerHTML = '<i class="fas fa-thermometer-full"></i> الخارج حار – زود التكييف';
+            } else {
+                adviceElement.className = 'temp-advice advice-good';
+                adviceElement.innerHTML = '<i class="fas fa-thumbs-up"></i> درجة الحرارة مناسبة – حالته تمام';
             }
         }
         
@@ -2562,9 +3185,17 @@
             const tempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature');
             window.firebase.onValue(tempRef, (snapshot) => {
                 const data = snapshot.val();
-                if (data) {
-                    document.getElementById('current-temp').textContent = `${data.value}°C`;
-                    document.getElementById('inside-temp-value').textContent = `${data.value}°C`;
+                if (data && data.value !== undefined) {
+                    const tempValue = parseFloat(data.value);
+                    document.getElementById('current-temp').textContent = `${tempValue}°C`;
+                    document.getElementById('inside-temp-value').textContent = `${tempValue}°C`;
+                    
+                    // Update advice if we have outdoor temp
+                    const outdoorTempElem = document.getElementById('outside-temp-value');
+                    if (outdoorTempElem && outdoorTempElem.textContent !== '--°C') {
+                        const outdoorTemp = parseFloat(outdoorTempElem.textContent);
+                        updateTemperatureAdvice(tempValue, outdoorTemp);
+                    }
                     
                     // Update last update time
                     document.getElementById('last-update').textContent = 'قبل قليل';
@@ -2575,7 +3206,7 @@
             const humidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity');
             window.firebase.onValue(humidityRef, (snapshot) => {
                 const data = snapshot.val();
-                if (data) {
+                if (data && data.value !== undefined) {
                     document.getElementById('inside-humidity-value').textContent = `${data.value}%`;
                 }
             });
@@ -2585,7 +3216,7 @@
             window.firebase.onValue(doorRef, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    const isOpen = data.status === 'open';
+                    const isOpen = data.status === 'open' || data.status === true;
                     
                     document.getElementById('door-status').textContent = isOpen ? 'مفتوح' : 'مغلق';
                     
@@ -2611,7 +3242,7 @@
             window.firebase.onValue(light1Ref, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    const isOn = data.status === 'on';
+                    const isOn = data.status === 'on' || data.status === true;
                     
                     const statusElement = document.getElementById('light1-control-status');
                     if (isOn) {
@@ -2634,7 +3265,7 @@
             window.firebase.onValue(light2Ref, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    const isOn = data.status === 'on';
+                    const isOn = data.status === 'on' || data.status === true;
                     
                     const statusElement = document.getElementById('light2-control-status');
                     if (isOn) {
@@ -2668,9 +3299,6 @@
                 }
             });
         }
-        
-        // Initialize the app
-        initializeApp();
     </script>
 </body>
 </html>
