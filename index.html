@@ -1,0 +1,2676 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Banquet Hall - القاعة الذكية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            signOut,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            deleteDoc,
+            doc,
+            updateDoc,
+            onSnapshot,
+            query,
+            orderBy,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { 
+            getDatabase, 
+            ref, 
+            set, 
+            onValue,
+            update 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkoz80E1b3xnKq_KLTRgIkf5DpsyHKPNA",
+            authDomain: "smart-banquet-hall.firebaseapp.com",
+            projectId: "smart-banquet-hall",
+            storageBucket: "smart-banquet-hall.firebasestorage.app",
+            messagingSenderId: "287767347082",
+            appId: "1:287767347082:web:79583505ed718230fc1273",
+            measurementId: "G-R3BK547WKY"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const rtdb = getDatabase(app);
+
+        window.firebase = { 
+            auth, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            db,
+            collection,
+            addDoc,
+            getDocs,
+            deleteDoc,
+            doc,
+            updateDoc,
+            onSnapshot,
+            query,
+            orderBy,
+            serverTimestamp,
+            rtdb,
+            ref,
+            set,
+            onValue,
+            update
+        };
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --warning-color: #f8961e;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --gray-color: #6c757d;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background-color: #f5f7fb;
+            color: #333;
+            min-height: 100vh;
+            direction: rtl;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+        }
+
+        .logo-text h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .logo-text p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: white;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Navigation */
+        nav {
+            background-color: white;
+            margin-top: 5px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+        }
+
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .nav-tabs li {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .nav-tabs a {
+            display: block;
+            padding: 18px 20px;
+            text-align: center;
+            color: var(--dark-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tabs a:hover {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+        }
+
+        .nav-tabs a.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: #f8f9fa;
+        }
+
+        .nav-tabs a i {
+            margin-left: 8px;
+            font-size: 1.2rem;
+        }
+
+        /* Main Content */
+        main {
+            padding: 30px 0;
+            min-height: calc(100vh - 200px);
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header h2 i {
+            color: var(--primary-color);
+        }
+
+        /* Cards */
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-header h3 {
+            font-size: 1.4rem;
+            color: var(--dark-color);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #2fa8d1;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #e11575;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e0871c;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        /* Tables */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+            box-shadow: 0 0 0 1px #eee;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th {
+            background-color: #f8f9fa;
+            padding: 16px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--dark-color);
+            border-bottom: 2px solid #eee;
+        }
+
+        table td {
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+        }
+
+        table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .stat-icon.guest {
+            background-color: var(--primary-color);
+        }
+
+        .stat-icon.temp {
+            background-color: var(--danger-color);
+        }
+
+        .stat-icon.door {
+            background-color: var(--success-color);
+        }
+
+        .stat-icon.light {
+            background-color: var(--warning-color);
+        }
+
+        .stat-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-info p {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        /* Control Cards */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .control-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+
+        .control-card h4 {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            color: var(--dark-color);
+        }
+
+        .control-status {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            font-weight: bold;
+        }
+
+        .status-on {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-off {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger-color);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* QR Code */
+        .qr-container {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 20px;
+        }
+
+        .qr-container img {
+            max-width: 250px;
+            margin: 0 auto 20px;
+        }
+
+        /* Login Page */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 20px;
+        }
+
+        .login-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .login-logo {
+            margin-bottom: 30px;
+        }
+
+        .login-logo i {
+            font-size: 4rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .login-logo h1 {
+            font-size: 2rem;
+            color: var(--dark-color);
+        }
+
+        .login-message {
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .login-message.error {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger-color);
+            display: block;
+        }
+
+        .login-message.success {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: var(--success-color);
+            display: block;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+
+            .nav-tabs li {
+                min-width: 120px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: white;
+            color: var(--dark-color);
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-right: 4px solid var(--success-color);
+        }
+
+        .toast.error {
+            border-right: 4px solid var(--danger-color);
+        }
+
+        .toast.warning {
+            border-right: 4px solid var(--warning-color);
+        }
+
+        /* Scanner */
+        #scanner-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+        }
+
+        #qr-video {
+            width: 100%;
+            display: block;
+        }
+
+        .scanner-result {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        /* Weather */
+        .weather-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: linear-gradient(135deg, #4cc9f0, #4361ee);
+            color: white;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+
+        .weather-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .weather-info p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+        }
+
+        .temp-comparison {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            margin-top: 20px;
+        }
+
+        .temp-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .temp-row:last-child {
+            border-bottom: none;
+        }
+
+        .temp-label {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .temp-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .temp-advice {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .advice-hot {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger-color);
+        }
+
+        .advice-cold {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--primary-color);
+        }
+
+        .advice-good {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page (Initial State) -->
+    <div id="login-page" class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="fas fa-glass-cheers"></i>
+                <h1>Smart Banquet Hall</h1>
+                <p>نظام إدارة القاعة الذكية</p>
+            </div>
+            
+            <div id="login-message" class="login-message"></div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">البريد الإلكتروني</label>
+                    <input type="email" id="login-email" class="form-control" placeholder="admin@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">كلمة المرور</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="******" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <span id="login-btn-text">تسجيل الدخول</span>
+                    <span id="login-spinner" class="loading" style="display: none;"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application (Initially Hidden) -->
+    <div id="app-container" style="display: none;">
+        <!-- Header -->
+        <header>
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">
+                        <i class="fas fa-glass-cheers"></i>
+                        <div class="logo-text">
+                            <h1>Smart Banquet Hall</h1>
+                            <p>نظام إدارة القاعة الذكية</p>
+                        </div>
+                    </div>
+                    
+                    <div class="user-info">
+                        <div class="user-avatar" id="user-avatar">A</div>
+                        <button id="logout-btn" class="logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav>
+            <div class="container">
+                <ul class="nav-tabs">
+                    <li><a href="#" data-section="dashboard" class="active"><i class="fas fa-home"></i> لوحة التحكم</a></li>
+                    <li><a href="#" data-section="guests"><i class="fas fa-users"></i> إدارة الضيوف</a></li>
+                    <li><a href="#" data-section="scanner"><i class="fas fa-qrcode"></i> مسح QR</a></li>
+                    <li><a href="#" data-section="controls"><i class="fas fa-sliders-h"></i> التحكم الذكي</a></li>
+                    <li><a href="#" data-section="weather"><i class="fas fa-thermometer-half"></i> الطقس والمناخ</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main>
+            <div class="container">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="content-section active">
+                    <div class="section-header">
+                        <h2><i class="fas fa-home"></i> لوحة التحكم الرئيسية</h2>
+                        <div id="current-time" class="btn btn-outline">الوقت: 00:00</div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon guest">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="total-guests">0</h3>
+                                <p>إجمالي الضيوف</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon temp">
+                                <i class="fas fa-thermometer-half"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="current-temp">0°C</h3>
+                                <p>درجة الحرارة الداخلية</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon door">
+                                <i class="fas fa-door-open"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="door-status">مغلق</h3>
+                                <p>حالة الباب</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon light">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="lights-status">مطفأ</h3>
+                                <p>حالة الإضاءة</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>إجراءات سريعة</h3>
+                        </div>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <button id="quick-open-door" class="btn btn-success">
+                                <i class="fas fa-door-open"></i> فتح الباب
+                            </button>
+                            <button id="quick-add-guest" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> إضافة ضيف
+                            </button>
+                            <button id="quick-scan" class="btn btn-warning">
+                                <i class="fas fa-qrcode"></i> مسح QR
+                            </button>
+                            <button id="quick-lights-on" class="btn btn-success">
+                                <i class="fas fa-lightbulb"></i> تشغيل الأنوار
+                            </button>
+                            <button id="quick-lights-off" class="btn btn-danger">
+                                <i class="fas fa-lightbulb"></i> إطفاء الأنوار
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Guests -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>آخر الضيوف المضافين</h3>
+                            <button id="refresh-guests" class="btn btn-outline btn-sm">
+                                <i class="fas fa-sync-alt"></i> تحديث
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="recent-guests-table">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>رمز QR</th>
+                                        <th>تاريخ الإضافة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-guests-body">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Guests Management Section -->
+                <section id="guests" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users"></i> إدارة الضيوف</h2>
+                        <div>
+                            <button id="add-guest-btn" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> إضافة ضيف جديد
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Guest Form (Initially Hidden) -->
+                    <div id="add-guest-form" class="card" style="display: none;">
+                        <div class="card-header">
+                            <h3>إضافة ضيف جديد</h3>
+                            <button id="close-form" class="btn btn-outline btn-sm">
+                                <i class="fas fa-times"></i> إغلاق
+                            </button>
+                        </div>
+                        
+                        <form id="guest-form">
+                            <div class="form-group">
+                                <label for="guest-name">اسم الضيف *</label>
+                                <input type="text" id="guest-name" class="form-control" placeholder="أدخل اسم الضيف" required>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="guest-phone">رقم الهاتف (اختياري)</label>
+                                    <input type="tel" id="guest-phone" class="form-control" placeholder="رقم الهاتف">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="guest-email">البريد الإلكتروني (اختياري)</label>
+                                    <input type="email" id="guest-email" class="form-control" placeholder="البريد الإلكتروني">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="guest-notes">ملاحظات (اختياري)</label>
+                                <textarea id="guest-notes" class="form-control" rows="3" placeholder="ملاحظات إضافية"></textarea>
+                            </div>
+                            
+                            <div class="form-group" style="text-align: left;">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-qrcode"></i> إنشاء QR وحفظ
+                                </button>
+                                <button type="button" id="cancel-form" class="btn btn-outline">
+                                    إلغاء
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Excel Upload Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>استيراد الضيوف من ملف Excel</h3>
+                        </div>
+                        <div>
+                            <p style="margin-bottom: 20px;">قم بتحميل ملف Excel يحتوي على أسماء الضيوف في العمود الأول. سيقوم النظام بإنشاء QR تلقائي لكل ضيف.</p>
+                            
+                            <div class="form-group">
+                                <label for="excel-file">اختر ملف Excel (.xlsx أو .xls)</label>
+                                <input type="file" id="excel-file" class="form-control" accept=".xlsx,.xls">
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                <button id="upload-excel" class="btn btn-success">
+                                    <i class="fas fa-upload"></i> رفع الملف وإنشاء QRs
+                                </button>
+                                <button id="download-template" class="btn btn-outline">
+                                    <i class="fas fa-download"></i> تحميل نموذج Excel
+                                </button>
+                            </div>
+                            
+                            <div id="excel-progress" style="margin-top: 20px; display: none;">
+                                <div style="background-color: #f0f0f0; border-radius: var(--border-radius); height: 20px; overflow: hidden;">
+                                    <div id="excel-progress-bar" style="background-color: var(--primary-color); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <p id="excel-progress-text" style="text-align: center; margin-top: 5px;">0%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- All Guests Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>جميع الضيوف</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="print-all-qr" class="btn btn-outline btn-sm">
+                                    <i class="fas fa-print"></i> طباعة جميع الـ QRs
+                                </button>
+                                <button id="delete-all-guests" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> حذف جميع الضيوف
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="all-guests-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>الاسم</th>
+                                        <th>QR Code</th>
+                                        <th>رقم الهاتف</th>
+                                        <th>البريد الإلكتروني</th>
+                                        <th>تاريخ الإضافة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="all-guests-body">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- QR Scanner Section -->
+                <section id="scanner" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-qrcode"></i> نظام مسح QR</h2>
+                        <button id="toggle-scanner" class="btn btn-primary">
+                            <i class="fas fa-camera"></i> تشغيل الماسح
+                        </button>
+                    </div>
+
+                    <!-- Scanner Container -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>مسح رمز QR</h3>
+                            <p>قم بتوجيه الكاميرا نحو رمز QR الخاص بالضيف</p>
+                        </div>
+                        
+                        <div id="scanner-container" style="display: none;">
+                            <video id="qr-video"></video>
+                        </div>
+                        
+                        <div id="scanner-result" class="scanner-result" style="display: none;">
+                            <h3 id="scan-guest-name"></h3>
+                            <p id="scan-message"></p>
+                            <div id="scan-details" style="margin-top: 20px;"></div>
+                        </div>
+                        
+                        <div id="scanner-placeholder" style="text-align: center; padding: 50px;">
+                            <i class="fas fa-qrcode" style="font-size: 5rem; color: #ddd; margin-bottom: 20px;"></i>
+                            <h3 style="color: var(--gray-color);">انقر على "تشغيل الماسح" لبدء مسح رموز QR</h3>
+                        </div>
+                    </div>
+
+                    <!-- Manual Entry -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>إدخال يدوي لرمز QR</h3>
+                        </div>
+                        <div>
+                            <div class="form-group">
+                                <label for="manual-qr">أدخل رمز QR يدويًا</label>
+                                <input type="text" id="manual-qr" class="form-control" placeholder="أدخل رمز QR هنا">
+                            </div>
+                            <button id="check-manual-qr" class="btn btn-primary">
+                                <i class="fas fa-search"></i> التحقق من الرمز
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Smart Controls Section -->
+                <section id="controls" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-sliders-h"></i> التحكم الذكي في القاعة</h2>
+                    </div>
+
+                    <!-- Door Control -->
+                    <div class="controls-grid">
+                        <div class="control-card">
+                            <h4><i class="fas fa-door-open"></i> التحكم في الباب</h4>
+                            <div class="control-status status-off" id="door-control-status">
+                                مغلق
+                            </div>
+                            <div class="control-buttons">
+                                <button id="open-door-btn" class="btn btn-success">
+                                    <i class="fas fa-door-open"></i> فتح الباب
+                                </button>
+                                <button id="close-door-btn" class="btn btn-danger" disabled>
+                                    <i class="fas fa-door-closed"></i> إغلاق الباب
+                                </button>
+                            </div>
+                            <p style="margin-top: 15px; color: var(--gray-color); font-size: 0.9rem;">
+                                الباب سيفتح لمدة 10 ثوانٍ ثم يغلق تلقائيًا
+                            </p>
+                        </div>
+
+                        <!-- Light 1 Control -->
+                        <div class="control-card">
+                            <h4><i class="fas fa-lightbulb"></i> الإضاءة الرئيسية</h4>
+                            <div class="control-status status-off" id="light1-control-status">
+                                مطفأة
+                            </div>
+                            <div class="control-buttons">
+                                <button id="light1-on-btn" class="btn btn-success">
+                                    <i class="fas fa-power-off"></i> تشغيل
+                                </button>
+                                <button id="light1-off-btn" class="btn btn-danger">
+                                    <i class="fas fa-power-off"></i> إطفاء
+                                </button>
+                            </div>
+                            <p style="margin-top: 15px; color: var(--gray-color); font-size: 0.9rem;">
+                                التحكم في الإضاءة الرئيسية للقاعة
+                            </p>
+                        </div>
+
+                        <!-- Light 2 Control -->
+                        <div class="control-card">
+                            <h4><i class="fas fa-lightbulb"></i> إضاءة المسرح</h4>
+                            <div class="control-status status-off" id="light2-control-status">
+                                مطفأة
+                            </div>
+                            <div class="control-buttons">
+                                <button id="light2-on-btn" class="btn btn-success">
+                                    <i class="fas fa-power-off"></i> تشغيل
+                                </button>
+                                <button id="light2-off-btn" class="btn btn-danger">
+                                    <i class="fas fa-power-off"></i> إطفاء
+                                </button>
+                            </div>
+                            <p style="margin-top: 15px; color: var(--gray-color); font-size: 0.9rem;">
+                                التحكم في إضاءة المسرح والمنصة
+                            </p>
+                        </div>
+
+                        <!-- System Status -->
+                        <div class="control-card">
+                            <h4><i class="fas fa-info-circle"></i> حالة النظام</h4>
+                            <div style="text-align: right; margin-top: 20px;">
+                                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                                    <span>اتصال ESP8266:</span>
+                                    <span id="esp-status" style="color: var(--danger-color); font-weight: bold;">غير متصل</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                                    <span>اتصال Firebase:</span>
+                                    <span id="firebase-status" style="color: var(--success-color); font-weight: bold;">متصل</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+                                    <span>آخر تحديث:</span>
+                                    <span id="last-update">قبل قليل</span>
+                                </div>
+                            </div>
+                            <button id="refresh-status" class="btn btn-outline" style="margin-top: 20px; width: 100%;">
+                                <i class="fas fa-sync-alt"></i> تحديث الحالة
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ESP8266 Control Commands -->
+                    <div class="card" style="margin-top: 30px;">
+                        <div class="card-header">
+                            <h3>إرسال أوامر مباشرة إلى ESP8266</h3>
+                        </div>
+                        <div>
+                            <p style="margin-bottom: 20px;">استخدم هذه الأوامر للتحكم المباشر في ESP8266 (لتجربة النظام)</p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-outline esp-command" data-command="DOOR_OPEN">
+                                    <i class="fas fa-door-open"></i> فتح الباب
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="DOOR_CLOSE">
+                                    <i class="fas fa-door-closed"></i> إغلاق الباب
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="LIGHT1_ON">
+                                    <i class="fas fa-lightbulb"></i> تشغيل LED 1
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="LIGHT1_OFF">
+                                    <i class="fas fa-lightbulb"></i> إطفاء LED 1
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="LIGHT2_ON">
+                                    <i class="fas fa-lightbulb"></i> تشغيل LED 2
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="LIGHT2_OFF">
+                                    <i class="fas fa-lightbulb"></i> إطفاء LED 2
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="LCD_WELCOME">
+                                    <i class="fas fa-tv"></i> عرض Welcome
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="GET_TEMP">
+                                    <i class="fas fa-thermometer-half"></i> قراءة الحرارة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Weather Section -->
+                <section id="weather" class="content-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-thermometer-half"></i> الطقس والمناخ</h2>
+                        <button id="refresh-weather" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> تحديث البيانات
+                        </button>
+                    </div>
+
+                    <!-- Current Weather -->
+                    <div class="weather-card">
+                        <div class="weather-info">
+                            <h3 id="outside-temp">--°C</h3>
+                            <p id="weather-description">جاري تحميل بيانات الطقس...</p>
+                            <p id="weather-location">القاهرة، مصر</p>
+                        </div>
+                        <div class="weather-icon">
+                            <i class="fas fa-sun" id="weather-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Temperature Comparison -->
+                    <div class="temp-comparison">
+                        <h3 style="margin-bottom: 20px;">مقارنة درجة الحرارة</h3>
+                        
+                        <div class="temp-row">
+                            <div class="temp-label">
+                                <i class="fas fa-home"></i> درجة الحرارة الداخلية
+                            </div>
+                            <div class="temp-value" id="inside-temp-value">--°C</div>
+                        </div>
+                        
+                        <div class="temp-row">
+                            <div class="temp-label">
+                                <i class="fas fa-cloud-sun"></i> درجة الحرارة الخارجية
+                            </div>
+                            <div class="temp-value" id="outside-temp-value">--°C</div>
+                        </div>
+                        
+                        <div class="temp-row">
+                            <div class="temp-label">
+                                <i class="fas fa-tint"></i> الرطوبة الداخلية
+                            </div>
+                            <div class="temp-value" id="inside-humidity-value">--%</div>
+                        </div>
+                        
+                        <div id="temperature-advice" class="temp-advice">
+                            جاري تحليل البيانات...
+                        </div>
+                    </div>
+
+                    <!-- Temperature History -->
+                    <div class="card" style="margin-top: 30px;">
+                        <div class="card-header">
+                            <h3>سجل درجات الحرارة</h3>
+                        </div>
+                        <div style="height: 300px; display: flex; align-items: center; justify-content: center; color: var(--gray-color);">
+                            <div style="text-align: center;">
+                                <i class="fas fa-chart-line" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.3;"></i>
+                                <p>سيتم عرض رسم بياني لسجل درجات الحرارة هنا</p>
+                                <p style="font-size: 0.9rem;">(هذه الميزة تحت التطوير)</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <div class="footer-content">
+                    <p>Smart Banquet Hall System &copy; 2024 - نظام القاعة الذكية</p>
+                    <p>جميع الحقوق محفوظة | تم التطوير باستخدام Firebase & ESP8266</p>
+                    <div style="display: flex; gap: 15px; margin-top: 10px;">
+                        <i class="fas fa-fire" style="color: #FFA611;"></i>
+                        <i class="fas fa-microchip" style="color: #4CC9F0;"></i>
+                        <i class="fas fa-qrcode" style="color: #4361EE;"></i>
+                        <i class="fas fa-cloud" style="color: #F8961E;"></i>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-info-circle"></i>
+        <span id="toast-message">رسالة إعلامية</span>
+    </div>
+
+    <!-- QR Modal -->
+    <div id="qr-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background-color: white; border-radius: var(--border-radius); padding: 30px; max-width: 400px; width: 90%; text-align: center;">
+            <h3 id="qr-modal-title" style="margin-bottom: 20px;">QR Code</h3>
+            <div id="qr-modal-image" style="margin-bottom: 20px;">
+                <!-- QR image will be inserted here -->
+            </div>
+            <p id="qr-modal-guest" style="margin-bottom: 20px; font-weight: bold;"></p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="print-qr-btn" class="btn btn-primary">
+                    <i class="fas fa-print"></i> طباعة
+                </button>
+                <button id="close-qr-modal" class="btn btn-outline">
+                    <i class="fas fa-times"></i> إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <!-- Main Application Script -->
+    <script>
+        // Firebase configuration
+        const IMGBB_API_KEY = 'df461154f7c611553040567379576ef5';
+        
+        // Global variables
+        let currentUser = null;
+        let guests = [];
+        let scannerActive = false;
+        let videoStream = null;
+        let qrScannerInterval = null;
+        
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // Check authentication state
+            window.firebase.onAuthStateChanged(window.firebase.auth, (user) => {
+                if (user) {
+                    // User is signed in
+                    currentUser = user;
+                    showApp();
+                    updateUserInfo();
+                    loadGuests();
+                    setupRealtimeListeners();
+                    updateTime();
+                    setInterval(updateTime, 1000);
+                } else {
+                    // User is signed out
+                    showLogin();
+                }
+            });
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Initialize toast
+            const toast = document.getElementById('toast');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = toast.querySelector('i');
+            
+            toastMessage.textContent = message;
+            
+            // Set icon and color based on type
+            switch(type) {
+                case 'success':
+                    toast.className = 'toast success show';
+                    toastIcon.className = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    toast.className = 'toast error show';
+                    toastIcon.className = 'fas fa-exclamation-circle';
+                    break;
+                case 'warning':
+                    toast.className = 'toast warning show';
+                    toastIcon.className = 'fas fa-exclamation-triangle';
+                    break;
+                default:
+                    toast.className = 'toast show';
+                    toastIcon.className = 'fas fa-info-circle';
+            }
+            
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function showLogin() {
+            document.getElementById('login-page').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+        }
+        
+        function showApp() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+        }
+        
+        function updateUserInfo() {
+            if (currentUser) {
+                const avatar = document.getElementById('user-avatar');
+                const email = currentUser.email;
+                avatar.textContent = email.charAt(0).toUpperCase();
+                
+                // Update user info in other places if needed
+            }
+        }
+        
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ar-EG');
+            const dateString = now.toLocaleDateString('ar-EG', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = `الوقت: ${timeString}`;
+                timeElement.title = dateString;
+            }
+        }
+        
+        function setupEventListeners() {
+            // Login form
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            
+            // Logout button
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+            
+            // Navigation tabs
+            document.querySelectorAll('.nav-tabs a').forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Update active tab
+                    document.querySelectorAll('.nav-tabs a').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show corresponding section
+                    const sectionId = this.getAttribute('data-section');
+                    document.querySelectorAll('.content-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    document.getElementById(sectionId).classList.add('active');
+                    
+                    // Special handling for scanner section
+                    if (sectionId === 'scanner') {
+                        // Stop scanner if it's active
+                        if (scannerActive) {
+                            toggleScanner();
+                        }
+                    }
+                });
+            });
+            
+            // Quick navigation from dashboard
+            document.getElementById('quick-add-guest')?.addEventListener('click', function() {
+                // Switch to guests section and show form
+                document.querySelector('.nav-tabs a[data-section="guests"]').click();
+                setTimeout(() => {
+                    document.getElementById('add-guest-form').style.display = 'block';
+                }, 100);
+            });
+            
+            document.getElementById('quick-scan')?.addEventListener('click', function() {
+                document.querySelector('.nav-tabs a[data-section="scanner"]').click();
+                setTimeout(() => {
+                    document.getElementById('toggle-scanner').click();
+                }, 100);
+            });
+            
+            // Guest management
+            document.getElementById('add-guest-btn')?.addEventListener('click', function() {
+                document.getElementById('add-guest-form').style.display = 'block';
+                document.getElementById('guest-name').focus();
+            });
+            
+            document.getElementById('close-form')?.addEventListener('click', function() {
+                document.getElementById('add-guest-form').style.display = 'none';
+                document.getElementById('guest-form').reset();
+            });
+            
+            document.getElementById('cancel-form')?.addEventListener('click', function() {
+                document.getElementById('add-guest-form').style.display = 'none';
+                document.getElementById('guest-form').reset();
+            });
+            
+            // Guest form submission
+            document.getElementById('guest-form').addEventListener('submit', handleAddGuest);
+            
+            // Excel upload
+            document.getElementById('upload-excel')?.addEventListener('click', handleExcelUpload);
+            document.getElementById('download-template')?.addEventListener('click', downloadExcelTemplate);
+            
+            // Print all QR codes
+            document.getElementById('print-all-qr')?.addEventListener('click', printAllQRCodes);
+            
+            // Delete all guests
+            document.getElementById('delete-all-guests')?.addEventListener('click', deleteAllGuests);
+            
+            // Refresh guests
+            document.getElementById('refresh-guests')?.addEventListener('click', loadGuests);
+            
+            // Scanner controls
+            document.getElementById('toggle-scanner')?.addEventListener('click', toggleScanner);
+            document.getElementById('check-manual-qr')?.addEventListener('click', checkManualQR);
+            
+            // Door controls
+            document.getElementById('quick-open-door')?.addEventListener('click', () => openDoor());
+            document.getElementById('open-door-btn')?.addEventListener('click', () => openDoor());
+            document.getElementById('close-door-btn')?.addEventListener('click', closeDoor);
+            
+            // Light controls
+            document.getElementById('quick-lights-on')?.addEventListener('click', () => turnOnAllLights());
+            document.getElementById('quick-lights-off')?.addEventListener('click', () => turnOffAllLights());
+            
+            document.getElementById('light1-on-btn')?.addEventListener('click', () => toggleLight(1, true));
+            document.getElementById('light1-off-btn')?.addEventListener('click', () => toggleLight(1, false));
+            document.getElementById('light2-on-btn')?.addEventListener('click', () => toggleLight(2, true));
+            document.getElementById('light2-off-btn')?.addEventListener('click', () => toggleLight(2, false));
+            
+            // ESP8266 commands
+            document.querySelectorAll('.esp-command').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const command = this.getAttribute('data-command');
+                    sendESPCommand(command);
+                });
+            });
+            
+            // Refresh status
+            document.getElementById('refresh-status')?.addEventListener('click', refreshSystemStatus);
+            
+            // Weather refresh
+            document.getElementById('refresh-weather')?.addEventListener('click', updateWeatherData);
+            
+            // QR modal
+            document.getElementById('close-qr-modal')?.addEventListener('click', function() {
+                document.getElementById('qr-modal').style.display = 'none';
+            });
+            
+            // Initial weather load
+            setTimeout(() => {
+                updateWeatherData();
+            }, 2000);
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const loginBtnText = document.getElementById('login-btn-text');
+            const loginSpinner = document.getElementById('login-spinner');
+            const loginMessage = document.getElementById('login-message');
+            
+            // Show loading
+            loginBtnText.textContent = 'جاري تسجيل الدخول...';
+            loginSpinner.style.display = 'inline-block';
+            
+            try {
+                // For demo purposes, we'll accept any email/password
+                // In a real app, you would use Firebase Authentication
+                const userCredential = await window.firebase.signInWithEmailAndPassword(
+                    window.firebase.auth, 
+                    email, 
+                    password
+                );
+                
+                // Success
+                loginMessage.className = 'login-message success';
+                loginMessage.textContent = 'تم تسجيل الدخول بنجاح!';
+                loginMessage.style.display = 'block';
+                
+            } catch (error) {
+                // Error
+                console.error('Login error:', error);
+                loginMessage.className = 'login-message error';
+                loginMessage.textContent = 'خطأ في تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.';
+                loginMessage.style.display = 'block';
+                
+                // Reset button
+                loginBtnText.textContent = 'تسجيل الدخول';
+                loginSpinner.style.display = 'none';
+            }
+        }
+        
+        async function handleLogout() {
+            try {
+                await window.firebase.signOut(window.firebase.auth);
+                showToast('تم تسجيل الخروج بنجاح', 'success');
+            } catch (error) {
+                console.error('Logout error:', error);
+                showToast('حدث خطأ أثناء تسجيل الخروج', 'error');
+            }
+        }
+        
+        async function loadGuests() {
+            try {
+                const guestsRef = window.firebase.collection(window.firebase.db, 'guests');
+                const querySnapshot = await window.firebase.getDocs(guestsRef);
+                
+                guests = [];
+                querySnapshot.forEach((doc) => {
+                    guests.push({ id: doc.id, ...doc.data() });
+                });
+                
+                updateGuestStats();
+                renderRecentGuests();
+                renderAllGuests();
+                
+                showToast(`تم تحميل ${guests.length} ضيف`, 'success');
+            } catch (error) {
+                console.error('Error loading guests:', error);
+                showToast('حدث خطأ في تحميل بيانات الضيوف', 'error');
+            }
+        }
+        
+        function updateGuestStats() {
+            document.getElementById('total-guests').textContent = guests.length;
+        }
+        
+        function renderRecentGuests() {
+            const tbody = document.getElementById('recent-guests-body');
+            tbody.innerHTML = '';
+            
+            // Sort by timestamp (newest first) and take first 5
+            const recentGuests = [...guests]
+                .sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0))
+                .slice(0, 5);
+            
+            recentGuests.forEach(guest => {
+                const row = document.createElement('tr');
+                
+                const date = guest.timestamp?.toDate 
+                    ? guest.timestamp.toDate().toLocaleDateString('ar-EG')
+                    : 'غير محدد';
+                
+                row.innerHTML = `
+                    <td>${guest.name || 'بدون اسم'}</td>
+                    <td>
+                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
+                            <i class="fas fa-qrcode"></i> عرض QR
+                        </button>
+                    </td>
+                    <td>${date}</td>
+                    <td>
+                        <button class="btn btn-outline btn-sm delete-guest" data-id="${guest.id}">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // Add event listeners to the new buttons
+            tbody.querySelectorAll('.view-qr').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const guestId = this.getAttribute('data-id');
+                    showQRModal(guestId);
+                });
+            });
+            
+            tbody.querySelectorAll('.delete-guest').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const guestId = this.getAttribute('data-id');
+                    deleteGuest(guestId);
+                });
+            });
+        }
+        
+        function renderAllGuests() {
+            const tbody = document.getElementById('all-guests-body');
+            tbody.innerHTML = '';
+            
+            guests.forEach((guest, index) => {
+                const row = document.createElement('tr');
+                
+                const date = guest.timestamp?.toDate 
+                    ? guest.timestamp.toDate().toLocaleDateString('ar-EG')
+                    : 'غير محدد';
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${guest.name || 'بدون اسم'}</td>
+                    <td>
+                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
+                            <i class="fas fa-qrcode"></i> عرض QR
+                        </button>
+                    </td>
+                    <td>${guest.phone || '--'}</td>
+                    <td>${guest.email || '--'}</td>
+                    <td>${date}</td>
+                    <td>
+                        <button class="btn btn-outline btn-sm delete-guest" data-id="${guest.id}">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // Add event listeners to the new buttons
+            tbody.querySelectorAll('.view-qr').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const guestId = this.getAttribute('data-id');
+                    showQRModal(guestId);
+                });
+            });
+            
+            tbody.querySelectorAll('.delete-guest').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const guestId = this.getAttribute('data-id');
+                    deleteGuest(guestId);
+                });
+            });
+        }
+        
+        async function handleAddGuest(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('guest-name').value;
+            const phone = document.getElementById('guest-phone').value;
+            const email = document.getElementById('guest-email').value;
+            const notes = document.getElementById('guest-notes').value;
+            
+            if (!name.trim()) {
+                showToast('يرجى إدخال اسم الضيف', 'warning');
+                return;
+            }
+            
+            // Generate unique ID for QR
+            const qrData = `SMART_HALL_GUEST_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            try {
+                // Generate QR code image
+                const qrImageUrl = await generateQRCodeImage(qrData, name);
+                
+                // Upload to imgbb
+                const imgbbUrl = await uploadToImgBB(qrImageUrl);
+                
+                // Save to Firestore
+                const guestData = {
+                    name,
+                    phone: phone || '',
+                    email: email || '',
+                    notes: notes || '',
+                    qrData,
+                    qrImageUrl: imgbbUrl,
+                    timestamp: window.firebase.serverTimestamp()
+                };
+                
+                const docRef = await window.firebase.addDoc(
+                    window.firebase.collection(window.firebase.db, 'guests'),
+                    guestData
+                );
+                
+                // Success
+                showToast(`تم إضافة ${name} بنجاح`, 'success');
+                document.getElementById('guest-form').reset();
+                document.getElementById('add-guest-form').style.display = 'none';
+                
+                // Reload guests
+                loadGuests();
+                
+            } catch (error) {
+                console.error('Error adding guest:', error);
+                showToast('حدث خطأ في إضافة الضيف', 'error');
+            }
+        }
+        
+        function generateQRCodeImage(qrData, name) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    QRCode.toCanvas(canvas, qrData, {
+                        width: 300,
+                        margin: 2,
+                        color: {
+                            dark: '#000000',
+                            light: '#FFFFFF'
+                        }
+                    }, function(error) {
+                        if (error) {
+                            reject(error);
+                        } else {
+                            // Add text to canvas
+                            const ctx = canvas.getContext('2d');
+                            ctx.font = '18px Arial';
+                            ctx.fillStyle = '#000000';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(name, canvas.width / 2, canvas.height - 10);
+                            
+                            resolve(canvas.toDataURL('image/png'));
+                        }
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+        
+        async function uploadToImgBB(imageDataUrl) {
+            // Convert base64 to blob
+            const response = await fetch(imageDataUrl);
+            const blob = await response.blob();
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('key', IMGBB_API_KEY);
+            formData.append('image', blob);
+            
+            // Upload to imgbb
+            const uploadResponse = await fetch('https://api.imgbb.com/1/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await uploadResponse.json();
+            
+            if (result.success) {
+                return result.data.url;
+            } else {
+                throw new Error('Failed to upload image to imgbb');
+            }
+        }
+        
+        function showQRModal(guestId) {
+            const guest = guests.find(g => g.id === guestId);
+            if (!guest) return;
+            
+            const modal = document.getElementById('qr-modal');
+            const title = document.getElementById('qr-modal-title');
+            const imageContainer = document.getElementById('qr-modal-image');
+            const guestName = document.getElementById('qr-modal-guest');
+            
+            title.textContent = `QR Code - ${guest.name}`;
+            guestName.textContent = guest.name;
+            
+            // Clear previous image
+            imageContainer.innerHTML = '';
+            
+            // Create and add image
+            const img = document.createElement('img');
+            img.src = guest.qrImageUrl || 'https://via.placeholder.com/300x300?text=QR+Code';
+            img.alt = `QR Code for ${guest.name}`;
+            img.style.width = '100%';
+            img.style.maxWidth = '300px';
+            img.style.borderRadius = '8px';
+            
+            imageContainer.appendChild(img);
+            
+            // Setup print button
+            document.getElementById('print-qr-btn').onclick = function() {
+                printQRCode(guest);
+            };
+            
+            // Show modal
+            modal.style.display = 'flex';
+        }
+        
+        function printQRCode(guest) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>طباعة QR - ${guest.name}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+                        h2 { color: #333; }
+                        img { max-width: 300px; margin: 20px 0; }
+                        .info { margin: 20px 0; }
+                        @media print {
+                            button { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>Smart Banquet Hall</h2>
+                    <h3>بطاقة ضيف: ${guest.name}</h3>
+                    <div class="info">
+                        <p>يرجى عرض هذا الرمز عند المدخل</p>
+                    </div>
+                    <img src="${guest.qrImageUrl}" alt="QR Code">
+                    <div class="info">
+                        <p>نظام القاعة الذكية © 2024</p>
+                    </div>
+                    <button onclick="window.print()">طباعة</button>
+                    <button onclick="window.close()">إغلاق</button>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+        
+        function printAllQRCodes() {
+            if (guests.length === 0) {
+                showToast('لا يوجد ضيوف لطباعة QR خاصتهم', 'warning');
+                return;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            let content = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>طباعة جميع رموز QR</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        h2 { text-align: center; color: #333; }
+                        .qr-grid { 
+                            display: grid; 
+                            grid-template-columns: repeat(3, 1fr); 
+                            gap: 20px; 
+                            margin-top: 30px;
+                        }
+                        .qr-card { 
+                            text-align: center; 
+                            border: 1px solid #ddd; 
+                            padding: 15px; 
+                            border-radius: 10px;
+                            page-break-inside: avoid;
+                        }
+                        .qr-card h4 { margin: 10px 0; }
+                        img { max-width: 100%; height: auto; }
+                        @media print {
+                            .qr-grid { grid-template-columns: repeat(2, 1fr); }
+                            button { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>Smart Banquet Hall - جميع رموز QR للضيوف</h2>
+                    <p style="text-align: center;">عدد الضيوف: ${guests.length}</p>
+                    <div class="qr-grid">
+            `;
+            
+            guests.forEach(guest => {
+                content += `
+                    <div class="qr-card">
+                        <h4>${guest.name}</h4>
+                        <img src="${guest.qrImageUrl || 'https://via.placeholder.com/200x200?text=QR'}" alt="QR Code" style="max-width: 200px;">
+                        <p>${guest.phone || ''}</p>
+                    </div>
+                `;
+            });
+            
+            content += `
+                    </div>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button onclick="window.print()">طباعة</button>
+                        <button onclick="window.close()">إغلاق</button>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(content);
+            printWindow.document.close();
+        }
+        
+        async function deleteGuest(guestId) {
+            if (!confirm('هل أنت متأكد من حذف هذا الضيف؟')) return;
+            
+            try {
+                await window.firebase.deleteDoc(
+                    window.firebase.doc(window.firebase.db, 'guests', guestId)
+                );
+                
+                showToast('تم حذف الضيف بنجاح', 'success');
+                loadGuests();
+            } catch (error) {
+                console.error('Error deleting guest:', error);
+                showToast('حدث خطأ في حذف الضيف', 'error');
+            }
+        }
+        
+        async function deleteAllGuests() {
+            if (guests.length === 0) {
+                showToast('لا يوجد ضيوف لحذفهم', 'warning');
+                return;
+            }
+            
+            if (!confirm(`هل أنت متأكد من حذف جميع الضيوف (${guests.length})؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
+                return;
+            }
+            
+            try {
+                // In a real app, you would also delete images from imgbb
+                // For now, we'll just delete from Firestore
+                
+                const deletePromises = guests.map(guest => 
+                    window.firebase.deleteDoc(
+                        window.firebase.doc(window.firebase.db, 'guests', guest.id)
+                    )
+                );
+                
+                await Promise.all(deletePromises);
+                
+                showToast('تم حذف جميع الضيوف بنجاح', 'success');
+                loadGuests();
+            } catch (error) {
+                console.error('Error deleting all guests:', error);
+                showToast('حدث خطأ في حذف الضيوف', 'error');
+            }
+        }
+        
+        function handleExcelUpload() {
+            const fileInput = document.getElementById('excel-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showToast('يرجى اختيار ملف Excel أولاً', 'warning');
+                return;
+            }
+            
+            const progressDiv = document.getElementById('excel-progress');
+            const progressBar = document.getElementById('excel-progress-bar');
+            const progressText = document.getElementById('excel-progress-text');
+            
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Get first sheet
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    // Extract guest names (assuming first column)
+                    const guestNames = jsonData
+                        .slice(1) // Skip header row
+                        .map(row => row[0])
+                        .filter(name => name && name.toString().trim() !== '');
+                    
+                    if (guestNames.length === 0) {
+                        showToast('لا توجد أسماء ضيوف في الملف', 'warning');
+                        progressDiv.style.display = 'none';
+                        return;
+                    }
+                    
+                    let successCount = 0;
+                    let errorCount = 0;
+                    
+                    for (let i = 0; i < guestNames.length; i++) {
+                        const name = guestNames[i].toString().trim();
+                        
+                        // Update progress
+                        const progress = Math.round(((i + 1) / guestNames.length) * 100);
+                        progressBar.style.width = `${progress}%`;
+                        progressText.textContent = `${progress}% (${i + 1}/${guestNames.length})`;
+                        
+                        try {
+                            // Generate unique ID for QR
+                            const qrData = `SMART_HALL_GUEST_EXCEL_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
+                            
+                            // Generate QR code image
+                            const qrImageUrl = await generateQRCodeImage(qrData, name);
+                            
+                            // Upload to imgbb
+                            const imgbbUrl = await uploadToImgBB(qrImageUrl);
+                            
+                            // Save to Firestore
+                            const guestData = {
+                                name,
+                                qrData,
+                                qrImageUrl: imgbbUrl,
+                                timestamp: window.firebase.serverTimestamp()
+                            };
+                            
+                            await window.firebase.addDoc(
+                                window.firebase.collection(window.firebase.db, 'guests'),
+                                guestData
+                            );
+                            
+                            successCount++;
+                        } catch (error) {
+                            console.error(`Error adding guest ${name}:`, error);
+                            errorCount++;
+                        }
+                    }
+                    
+                    // Complete
+                    progressDiv.style.display = 'none';
+                    showToast(`تم إضافة ${successCount} ضيف بنجاح. فشل: ${errorCount}`, 
+                             successCount > 0 ? 'success' : 'error');
+                    
+                    // Clear file input
+                    fileInput.value = '';
+                    
+                    // Reload guests
+                    loadGuests();
+                    
+                } catch (error) {
+                    console.error('Error processing Excel file:', error);
+                    showToast('حدث خطأ في معالجة ملف Excel', 'error');
+                    progressDiv.style.display = 'none';
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function downloadExcelTemplate() {
+            // Create a simple Excel template
+            const data = [
+                ['اسم الضيف', 'رقم الهاتف', 'البريد الإلكتروني', 'ملاحظات'],
+                ['أحمد محمد', '01012345678', 'ahmed@example.com', 'ضيف شرف'],
+                ['سارة خالد', '01198765432', 'sara@example.com', ''],
+                ['محمود علي', '01234567890', '', 'سيحضر مع عائلته'],
+            ];
+            
+            const worksheet = XLSX.utils.aoa_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'الضيوف');
+            
+            // Generate and download file
+            XLSX.writeFile(workbook, 'نموذج_الضيوف.xlsx');
+            showToast('تم تحميل النموذج بنجاح', 'success');
+        }
+        
+        function toggleScanner() {
+            const toggleBtn = document.getElementById('toggle-scanner');
+            const scannerContainer = document.getElementById('scanner-container');
+            const scannerPlaceholder = document.getElementById('scanner-placeholder');
+            const scannerResult = document.getElementById('scanner-result');
+            
+            if (!scannerActive) {
+                // Start scanner
+                startScanner();
+                toggleBtn.innerHTML = '<i class="fas fa-stop"></i> إيقاف الماسح';
+                scannerContainer.style.display = 'block';
+                scannerPlaceholder.style.display = 'none';
+                scannerResult.style.display = 'none';
+                scannerActive = true;
+            } else {
+                // Stop scanner
+                stopScanner();
+                toggleBtn.innerHTML = '<i class="fas fa-camera"></i> تشغيل الماسح';
+                scannerContainer.style.display = 'none';
+                scannerPlaceholder.style.display = 'block';
+                scannerActive = false;
+            }
+        }
+        
+        function startScanner() {
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
+            })
+            .then(stream => {
+                videoStream = stream;
+                const video = document.getElementById('qr-video');
+                video.srcObject = stream;
+                video.play();
+                
+                // Start QR scanning
+                qrScannerInterval = setInterval(scanQRCode, 500);
+            })
+            .catch(error => {
+                console.error('Error accessing camera:', error);
+                showToast('تعذر الوصول إلى الكاميرا. تأكد من السماح باستخدام الكاميرا.', 'error');
+                
+                // Reset scanner state
+                const toggleBtn = document.getElementById('toggle-scanner');
+                const scannerContainer = document.getElementById('scanner-container');
+                const scannerPlaceholder = document.getElementById('scanner-placeholder');
+                
+                toggleBtn.innerHTML = '<i class="fas fa-camera"></i> تشغيل الماسح';
+                scannerContainer.style.display = 'none';
+                scannerPlaceholder.style.display = 'block';
+                scannerActive = false;
+            });
+        }
+        
+        function stopScanner() {
+            if (qrScannerInterval) {
+                clearInterval(qrScannerInterval);
+                qrScannerInterval = null;
+            }
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            const video = document.getElementById('qr-video');
+            video.srcObject = null;
+        }
+        
+        function scanQRCode() {
+            const video = document.getElementById('qr-video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    // QR code found
+                    handleScannedQR(code.data);
+                }
+            }
+        }
+        
+        async function handleScannedQR(qrData) {
+            // Stop scanner temporarily
+            if (qrScannerInterval) {
+                clearInterval(qrScannerInterval);
+            }
+            
+            // Find guest by QR data
+            const guest = guests.find(g => g.qrData === qrData);
+            
+            const scannerResult = document.getElementById('scanner-result');
+            const guestName = document.getElementById('scan-guest-name');
+            const scanMessage = document.getElementById('scan-message');
+            const scanDetails = document.getElementById('scan-details');
+            
+            if (guest) {
+                // Valid guest
+                guestName.textContent = `مرحباً ${guest.name}!`;
+                scanMessage.textContent = 'تم التعرف على QR بنجاح';
+                scanMessage.style.color = 'var(--success-color)';
+                
+                scanDetails.innerHTML = `
+                    <p><strong>اسم الضيف:</strong> ${guest.name}</p>
+                    ${guest.phone ? `<p><strong>رقم الهاتف:</strong> ${guest.phone}</p>` : ''}
+                    ${guest.email ? `<p><strong>البريد الإلكتروني:</strong> ${guest.email}</p>` : ''}
+                    <div style="margin-top: 20px;">
+                        <button id="open-door-for-guest" class="btn btn-success">
+                            <i class="fas fa-door-open"></i> فتح الباب للضيف
+                        </button>
+                    </div>
+                `;
+                
+                // Add event listener to open door button
+                setTimeout(() => {
+                    document.getElementById('open-door-for-guest')?.addEventListener('click', () => {
+                        openDoor();
+                        showToast(`تم فتح الباب لـ ${guest.name}`, 'success');
+                    });
+                }, 100);
+                
+                // Send command to ESP8266 to open door and display welcome
+                sendESPCommand('DOOR_OPEN');
+                
+                // Send command to display guest name on LCD
+                // In a real system, you would send a command to ESP8266
+                
+            } else {
+                // Invalid QR
+                guestName.textContent = 'لم يتم التعرف على QR';
+                scanMessage.textContent = 'رمز QR غير صالح أو غير مسجل في النظام';
+                scanMessage.style.color = 'var(--danger-color)';
+                
+                scanDetails.innerHTML = `
+                    <p>يرجى التحقق من رمز QR والمحاولة مرة أخرى</p>
+                    <div style="margin-top: 20px;">
+                        <button id="retry-scan" class="btn btn-outline">
+                            <i class="fas fa-redo"></i> المحاولة مرة أخرى
+                        </button>
+                    </div>
+                `;
+                
+                // Send command to ESP8266 to display error on LCD
+                sendESPCommand('LCD_ERROR');
+                
+                // Add event listener to retry button
+                setTimeout(() => {
+                    document.getElementById('retry-scan')?.addEventListener('click', () => {
+                        scanDetails.innerHTML = '';
+                        if (qrScannerInterval) {
+                            clearInterval(qrScannerInterval);
+                        }
+                        qrScannerInterval = setInterval(scanQRCode, 500);
+                    });
+                }, 100);
+            }
+            
+            // Show result
+            scannerResult.style.display = 'block';
+            
+            // Restart scanner after 10 seconds
+            setTimeout(() => {
+                if (scannerActive && !qrScannerInterval) {
+                    qrScannerInterval = setInterval(scanQRCode, 500);
+                }
+            }, 10000);
+        }
+        
+        function checkManualQR() {
+            const manualQR = document.getElementById('manual-qr').value.trim();
+            
+            if (!manualQR) {
+                showToast('يرجى إدخال رمز QR', 'warning');
+                return;
+            }
+            
+            // Simulate scanning the manual QR
+            handleScannedQR(manualQR);
+        }
+        
+        function openDoor() {
+            // Update UI
+            document.getElementById('door-control-status').className = 'control-status status-on';
+            document.getElementById('door-control-status').textContent = 'مفتوح';
+            document.getElementById('door-status').textContent = 'مفتوح';
+            
+            document.getElementById('open-door-btn').disabled = true;
+            document.getElementById('close-door-btn').disabled = false;
+            
+            // Send command to ESP8266
+            sendESPCommand('DOOR_OPEN');
+            
+            showToast('تم إرسال أمر فتح الباب', 'success');
+            
+            // Auto close after 10 seconds
+            setTimeout(() => {
+                closeDoor();
+            }, 10000);
+        }
+        
+        function closeDoor() {
+            // Update UI
+            document.getElementById('door-control-status').className = 'control-status status-off';
+            document.getElementById('door-control-status').textContent = 'مغلق';
+            document.getElementById('door-status').textContent = 'مغلق';
+            
+            document.getElementById('open-door-btn').disabled = false;
+            document.getElementById('close-door-btn').disabled = true;
+            
+            // Send command to ESP8266
+            sendESPCommand('DOOR_CLOSE');
+            
+            showToast('تم إرسال أمر إغلاق الباب', 'success');
+        }
+        
+        function toggleLight(lightNumber, turnOn) {
+            const statusElement = document.getElementById(`light${lightNumber}-control-status`);
+            const onBtn = document.getElementById(`light${lightNumber}-on-btn`);
+            const offBtn = document.getElementById(`light${lightNumber}-off-btn`);
+            
+            if (turnOn) {
+                statusElement.className = 'control-status status-on';
+                statusElement.textContent = 'مشغلة';
+                onBtn.disabled = true;
+                offBtn.disabled = false;
+                
+                // Send command to ESP8266
+                sendESPCommand(`LIGHT${lightNumber}_ON`);
+                showToast(`تم تشغيل الإضاءة ${lightNumber}`, 'success');
+            } else {
+                statusElement.className = 'control-status status-off';
+                statusElement.textContent = 'مطفأة';
+                onBtn.disabled = false;
+                offBtn.disabled = true;
+                
+                // Send command to ESP8266
+                sendESPCommand(`LIGHT${lightNumber}_OFF`);
+                showToast(`تم إطفاء الإضاءة ${lightNumber}`, 'success');
+            }
+            
+            // Update overall lights status
+            updateLightsStatus();
+        }
+        
+        function turnOnAllLights() {
+            toggleLight(1, true);
+            toggleLight(2, true);
+            showToast('تم تشغيل جميع الأنوار', 'success');
+        }
+        
+        function turnOffAllLights() {
+            toggleLight(1, false);
+            toggleLight(2, false);
+            showToast('تم إطفاء جميع الأنوار', 'success');
+        }
+        
+        function updateLightsStatus() {
+            const light1Status = document.getElementById('light1-control-status').textContent;
+            const light2Status = document.getElementById('light2-control-status').textContent;
+            
+            if (light1Status === 'مشغلة' || light2Status === 'مشغلة') {
+                document.getElementById('lights-status').textContent = 'مشغلة';
+            } else {
+                document.getElementById('lights-status').textContent = 'مطفأة';
+            }
+        }
+        
+        function sendESPCommand(command) {
+            // In a real implementation, this would send data to ESP8266
+            // For now, we'll simulate it and update Firebase
+            
+            console.log(`Sending command to ESP8266: ${command}`);
+            
+            // Update Firebase Realtime Database with command
+            const commandRef = window.firebase.ref(window.firebase.rtdb, 'commands');
+            window.firebase.set(window.firebase.ref(window.firebase.rtdb, 'commands/latest'), {
+                command: command,
+                timestamp: Date.now(),
+                executed: false
+            })
+            .then(() => {
+                console.log(`Command ${command} sent to Firebase`);
+                
+                // Also update the last update time
+                document.getElementById('last-update').textContent = 'الآن';
+            })
+            .catch(error => {
+                console.error('Error sending command:', error);
+                showToast('تعذر إرسال الأمر إلى ESP8266', 'error');
+            });
+        }
+        
+        function refreshSystemStatus() {
+            document.getElementById('last-update').textContent = 'الآن';
+            showToast('تم تحديث حالة النظام', 'success');
+        }
+        
+        async function updateWeatherData() {
+            try {
+                // For demo, we'll simulate weather data
+                // In a real app, you would fetch from Google Weather API
+            
+                // Simulate indoor temperature from ESP8266 (from Firebase)
+                const indoorTemp = Math.floor(Math.random() * 15) + 20; // 20-35°C
+                const indoorHumidity = Math.floor(Math.random() * 30) + 40; // 40-70%
+                
+                // Simulate outdoor temperature (from weather API)
+                const outdoorTemp = Math.floor(Math.random() * 10) + indoorTemp - 5; // ±5°C from indoor
+                
+                // Update UI
+                document.getElementById('current-temp').textContent = `${indoorTemp}°C`;
+                document.getElementById('inside-temp-value').textContent = `${indoorTemp}°C`;
+                document.getElementById('inside-humidity-value').textContent = `${indoorHumidity}%`;
+                document.getElementById('outside-temp').textContent = `${outdoorTemp}°C`;
+                document.getElementById('outside-temp-value').textContent = `${outdoorTemp}°C`;
+                
+                // Update weather description
+                let description = 'مشمس';
+                let icon = 'fas fa-sun';
+                
+                if (outdoorTemp > 30) {
+                    description = 'حار جداً';
+                    icon = 'fas fa-temperature-high';
+                } else if (outdoorTemp < 20) {
+                    description = 'بارد';
+                    icon = 'fas fa-temperature-low';
+                } else if (Math.random() > 0.7) {
+                    description = 'غائم جزئياً';
+                    icon = 'fas fa-cloud-sun';
+                }
+                
+                document.getElementById('weather-description').textContent = description;
+                document.getElementById('weather-icon').className = icon;
+                
+                // Temperature comparison and advice
+                const adviceElement = document.getElementById('temperature-advice');
+                
+                if (indoorTemp > 28) {
+                    adviceElement.className = 'temp-advice advice-hot';
+                    adviceElement.innerHTML = '<i class="fas fa-fire"></i> الجو شوب قوي – علي التكييف';
+                } else if (indoorTemp < 22) {
+                    adviceElement.className = 'temp-advice advice-cold';
+                    adviceElement.innerHTML = '<i class="fas fa-snowflake"></i> انا متلج – قلل التكييف شوية';
+                } else {
+                    adviceElement.className = 'temp-advice advice-good';
+                    adviceElement.innerHTML = '<i class="fas fa-thumbs-up"></i> درجة الحرارة مناسبة – حالته تمام';
+                }
+                
+                showToast('تم تحديث بيانات الطقس', 'success');
+                
+            } catch (error) {
+                console.error('Error updating weather:', error);
+                showToast('حدث خطأ في تحديث بيانات الطقس', 'error');
+            }
+        }
+        
+        function setupRealtimeListeners() {
+            // Listen for temperature updates from ESP8266
+            const tempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature');
+            window.firebase.onValue(tempRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('current-temp').textContent = `${data.value}°C`;
+                    document.getElementById('inside-temp-value').textContent = `${data.value}°C`;
+                    
+                    // Update last update time
+                    document.getElementById('last-update').textContent = 'قبل قليل';
+                }
+            });
+            
+            // Listen for humidity updates
+            const humidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity');
+            window.firebase.onValue(humidityRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('inside-humidity-value').textContent = `${data.value}%`;
+                }
+            });
+            
+            // Listen for door status
+            const doorRef = window.firebase.ref(window.firebase.rtdb, 'devices/door');
+            window.firebase.onValue(doorRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const isOpen = data.status === 'open';
+                    
+                    document.getElementById('door-status').textContent = isOpen ? 'مفتوح' : 'مغلق';
+                    
+                    const doorControlStatus = document.getElementById('door-control-status');
+                    if (isOpen) {
+                        doorControlStatus.className = 'control-status status-on';
+                        doorControlStatus.textContent = 'مفتوح';
+                        
+                        document.getElementById('open-door-btn').disabled = true;
+                        document.getElementById('close-door-btn').disabled = false;
+                    } else {
+                        doorControlStatus.className = 'control-status status-off';
+                        doorControlStatus.textContent = 'مغلق';
+                        
+                        document.getElementById('open-door-btn').disabled = false;
+                        document.getElementById('close-door-btn').disabled = true;
+                    }
+                }
+            });
+            
+            // Listen for light status
+            const light1Ref = window.firebase.ref(window.firebase.rtdb, 'devices/light1');
+            window.firebase.onValue(light1Ref, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const isOn = data.status === 'on';
+                    
+                    const statusElement = document.getElementById('light1-control-status');
+                    if (isOn) {
+                        statusElement.className = 'control-status status-on';
+                        statusElement.textContent = 'مشغلة';
+                        document.getElementById('light1-on-btn').disabled = true;
+                        document.getElementById('light1-off-btn').disabled = false;
+                    } else {
+                        statusElement.className = 'control-status status-off';
+                        statusElement.textContent = 'مطفأة';
+                        document.getElementById('light1-on-btn').disabled = false;
+                        document.getElementById('light1-off-btn').disabled = true;
+                    }
+                    
+                    updateLightsStatus();
+                }
+            });
+            
+            const light2Ref = window.firebase.ref(window.firebase.rtdb, 'devices/light2');
+            window.firebase.onValue(light2Ref, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const isOn = data.status === 'on';
+                    
+                    const statusElement = document.getElementById('light2-control-status');
+                    if (isOn) {
+                        statusElement.className = 'control-status status-on';
+                        statusElement.textContent = 'مشغلة';
+                        document.getElementById('light2-on-btn').disabled = true;
+                        document.getElementById('light2-off-btn').disabled = false;
+                    } else {
+                        statusElement.className = 'control-status status-off';
+                        statusElement.textContent = 'مطفأة';
+                        document.getElementById('light2-on-btn').disabled = false;
+                        document.getElementById('light2-off-btn').disabled = true;
+                    }
+                    
+                    updateLightsStatus();
+                }
+            });
+            
+            // Update ESP connection status
+            const espRef = window.firebase.ref(window.firebase.rtdb, 'system/espConnected');
+            window.firebase.onValue(espRef, (snapshot) => {
+                const isConnected = snapshot.val();
+                const espStatus = document.getElementById('esp-status');
+                
+                if (isConnected) {
+                    espStatus.textContent = 'متصل';
+                    espStatus.style.color = 'var(--success-color)';
+                } else {
+                    espStatus.textContent = 'غير متصل';
+                    espStatus.style.color = 'var(--danger-color)';
+                }
+            });
+        }
+        
+        // Initialize the app
+        initializeApp();
+    </script>
+</body>
+</html>
