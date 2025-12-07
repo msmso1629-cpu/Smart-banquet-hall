@@ -976,16 +976,15 @@
                             <table id="recent-guests-table">
                                 <thead>
                                     <tr>
-                                        <th>الاسم</th>
-                                        <th>رمز QR</th>
-                                        <th>الرمز السريع</th>
-                                        <th>وقت المسح</th>
-                                        <th>حالة الباب</th>
+                                        <th>اسم الضيف</th>
+                                        <th>عدد الأفراد</th>
+                                        <th>مرات الدخول</th>
+                                        <th>آخر دخول</th>
                                         <th>الإجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody id="recent-guests-body">
-                                    <!-- Will be populated by JavaScript -->
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
                                 </tbody>
                             </table>
                         </div>
@@ -1018,21 +1017,17 @@
                                 <input type="text" id="guest-name" class="form-control" placeholder="أدخل اسم الضيف" required>
                             </div>
                             
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="guest-phone">رقم الهاتف (اختياري)</label>
-                                    <input type="tel" id="guest-phone" class="form-control" placeholder="رقم الهاتف">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="guest-email">البريد الإلكتروني (اختياري)</label>
-                                    <input type="email" id="guest-email" class="form-control" placeholder="البريد الإلكتروني">
-                                </div>
-                            </div>
-                            
                             <div class="form-group">
-                                <label for="guest-notes">ملاحظات (اختياري)</label>
-                                <textarea id="guest-notes" class="form-control" rows="3" placeholder="ملاحظات إضافية"></textarea>
+                                <label for="guest-count">عدد الأفراد *</label>
+                                <input type="number" id="guest-count" class="form-control" 
+                                       placeholder="أدخل عدد الأفراد" 
+                                       min="1" 
+                                       max="20" 
+                                       value="1" 
+                                       required>
+                                <small style="color: #666; display: block; margin-top: 5px;">
+                                    عدد الأشخاص الذين سيحضرون مع هذا الضيف
+                                </small>
                             </div>
                             
                             <div class="form-group" style="text-align: left;">
@@ -1052,7 +1047,7 @@
                             <h3>استيراد الضيوف من ملف Excel</h3>
                         </div>
                         <div>
-                            <p style="margin-bottom: 20px;">قم بتحميل ملف Excel يحتوي على أسماء الضيوف في العمود الأول. سيقوم النظام بإنشاء QR تلقائي لكل ضيف مع رمز سريع.</p>
+                            <p style="margin-bottom: 20px;">قم بتحميل ملف Excel يحتوي على أسماء الضيوف في العمود الأول وعدد الأفراد في العمود الثاني.</p>
                             
                             <div class="form-group">
                                 <label for="excel-file">اختر ملف Excel (.xlsx أو .xls)</label>
@@ -1095,18 +1090,18 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>الاسم</th>
+                                        <th>اسم الضيف</th>
+                                        <th>عدد الأفراد</th>
                                         <th>QR Code</th>
                                         <th>الرمز السريع</th>
-                                        <th>رقم الهاتف</th>
-                                        <th>البريد الإلكتروني</th>
                                         <th>حالة الحضور</th>
+                                        <th>مرات الدخول</th>
                                         <th>تاريخ الإضافة</th>
                                         <th>الإجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody id="all-guests-body">
-                                    <!-- Will be populated by JavaScript -->
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
                                 </tbody>
                             </table>
                         </div>
@@ -1233,7 +1228,7 @@
                             </p>
                         </div>
 
-                        <!-- System Status -->
+                        
                         <div class="control-card">
                             <h4><i class="fas fa-info-circle"></i> حالة النظام</h4>
                             <div style="text-align: right; margin-top: 20px;">
@@ -1389,9 +1384,12 @@
         <div style="background-color: white; border-radius: var(--border-radius); padding: 30px; max-width: 400px; width: 90%; text-align: center;">
             <h3 id="qr-modal-title" style="margin-bottom: 20px;">QR Code</h3>
             <div id="qr-modal-image" style="margin-bottom: 20px;">
-                <!-- QR image will be inserted here -->
+                <!-- سيتم إدراج صورة QR هنا -->
             </div>
-            <p id="qr-modal-guest" style="margin-bottom: 20px; font-weight: bold;"></p>
+            <p id="qr-modal-guest" style="margin-bottom: 10px; font-weight: bold; font-size: 1.2rem;"></p>
+            <p id="qr-modal-count" style="margin-bottom: 20px; color: var(--primary-color); font-weight: bold;">
+                عدد الأفراد: <span id="guest-count-display">1</span>
+            </p>
             <div id="qr-quickcode" style="margin-bottom: 20px; font-family: monospace; font-size: 18px; letter-spacing: 3px; background: #f5f5f5; padding: 10px; border-radius: 5px;"></div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button id="print-qr-btn" class="btn btn-primary">
@@ -1587,11 +1585,13 @@
             document.getElementById('close-form')?.addEventListener('click', function() {
                 document.getElementById('add-guest-form').style.display = 'none';
                 document.getElementById('guest-form').reset();
+                document.getElementById('guest-count').value = 1;
             });
             
             document.getElementById('cancel-form')?.addEventListener('click', function() {
                 document.getElementById('add-guest-form').style.display = 'none';
                 document.getElementById('guest-form').reset();
+                document.getElementById('guest-count').value = 1;
             });
             
             // Guest form submission
@@ -1656,10 +1656,11 @@
             // Print QR button in modal
             document.getElementById('print-qr-btn')?.addEventListener('click', function() {
                 const guestName = document.getElementById('qr-modal-guest').textContent;
+                const guestCount = document.getElementById('guest-count-display').textContent;
                 const qrImage = document.querySelector('#qr-modal-image img');
                 const quickCode = document.getElementById('qr-quickcode').textContent;
                 if (qrImage) {
-                    printQRImage(guestName, qrImage.src, quickCode);
+                    printQRImage(guestName, guestCount, qrImage.src, quickCode);
                 }
             });
         }
@@ -1746,7 +1747,6 @@
                 updateGuestStats();
                 renderAllGuests();
                 
-                showToast(`تم تحميل ${guests.length} ضيف`, 'success');
             } catch (error) {
                 console.error('Error loading guests:', error);
                 showToast('حدث خطأ في تحميل بيانات الضيوف', 'error');
@@ -1767,7 +1767,6 @@
                 updateGuestStats();
                 renderRecentGuests();
                 
-                showToast(`تم تحميل ${attendance.length} حالة حضور`, 'success');
             } catch (error) {
                 console.error('Error loading attendance:', error);
                 showToast('حدث خطأ في تحميل بيانات الحضور', 'error');
@@ -1776,49 +1775,78 @@
         
         function updateGuestStats() {
             const totalGuests = guests.length;
-            const presentGuests = attendance.length;
-            document.getElementById('total-guests').textContent = `${presentGuests}/${totalGuests}`;
+            let presentGuestCount = 0;
+            let totalIndividuals = 0;
+            
+            // حساب عدد الضيوف الحاضرين والأفراد
+            const presentGuestsSet = new Set();
+            attendance.forEach(record => {
+                const guest = guests.find(g => g.qrData === record.qrData);
+                if (guest && !presentGuestsSet.has(guest.id)) {
+                    presentGuestsSet.add(guest.id);
+                    presentGuestCount++;
+                    totalIndividuals += (guest.individualCount || 1);
+                }
+            });
+            
+            document.getElementById('total-guests').textContent = `${presentGuestCount}/${totalGuests}`;
         }
         
         function renderRecentGuests() {
             const tbody = document.getElementById('recent-guests-body');
             tbody.innerHTML = '';
             
-            // Show last 10 attendance records
-            const recentAttendance = attendance.slice(0, 10);
+            // تجميع بيانات الدخول لكل ضيف
+            const guestAttendanceMap = {};
             
-            recentAttendance.forEach(record => {
-                const row = document.createElement('tr');
-                
+            attendance.forEach(record => {
                 const guest = guests.find(g => g.qrData === record.qrData);
-                const guestName = guest ? guest.name : 'ضيف غير معروف';
-                const quickCode = guest ? guest.quickCode : '--';
+                if (guest) {
+                    if (!guestAttendanceMap[guest.id]) {
+                        guestAttendanceMap[guest.id] = {
+                            guest: guest,
+                            entries: [],
+                            entryCount: 0
+                        };
+                    }
+                    
+                    guestAttendanceMap[guest.id].entries.push(record);
+                    guestAttendanceMap[guest.id].entryCount++;
+                }
+            });
+            
+            // تحويل الـ Map إلى مصفوفة وعرضها
+            Object.values(guestAttendanceMap).forEach(item => {
+                const row = document.createElement('tr');
+                const guest = item.guest;
                 
-                let scanTime = 'غير محدد';
-                if (record.scanTime) {
-                    if (record.scanTime.toDate) {
-                        scanTime = record.scanTime.toDate().toLocaleString('ar-EG');
-                    } else if (record.scanTime.seconds) {
-                        scanTime = new Date(record.scanTime.seconds * 1000).toLocaleString('ar-EG');
+                // العثور على آخر وقت دخول
+                let lastEntryTime = 'غير محدد';
+                if (item.entries.length > 0) {
+                    const lastEntry = item.entries[0];
+                    if (lastEntry.scanTime) {
+                        if (lastEntry.scanTime.toDate) {
+                            lastEntryTime = lastEntry.scanTime.toDate().toLocaleString('ar-EG');
+                        } else if (lastEntry.scanTime.seconds) {
+                            lastEntryTime = new Date(lastEntry.scanTime.seconds * 1000).toLocaleString('ar-EG');
+                        }
                     }
                 }
                 
                 row.innerHTML = `
-                    <td>${guestName}</td>
+                    <td>${guest.name || 'بدون اسم'}</td>
+                    <td>${guest.individualCount || 1}</td>
                     <td>
-                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest ? guest.id : ''}">
-                            <i class="fas fa-qrcode"></i> عرض QR
-                        </button>
-                    </td>
-                    <td>${quickCode}</td>
-                    <td>${scanTime}</td>
-                    <td>
-                        <span style="color: ${record.doorOpened ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">
-                            ${record.doorOpened ? 'تم الفتح' : 'لم يفتح'}
+                        <span class="badge" style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 20px; font-weight: bold;">
+                            ${item.entryCount}
                         </span>
                     </td>
+                    <td>${lastEntryTime}</td>
                     <td>
-                        <button class="btn btn-outline btn-sm delete-attendance" data-id="${record.id}">
+                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
+                            <i class="fas fa-qrcode"></i> عرض QR
+                        </button>
+                        <button class="btn btn-danger btn-sm delete-guest-attendance" data-id="${guest.id}">
                             <i class="fas fa-trash"></i> حذف
                         </button>
                     </td>
@@ -1827,7 +1855,7 @@
                 tbody.appendChild(row);
             });
             
-            // Add event listeners to the new buttons
+            // إضافة مستمعي الأحداث للأزرار الجديدة
             tbody.querySelectorAll('.view-qr').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const guestId = this.getAttribute('data-id');
@@ -1837,10 +1865,10 @@
                 });
             });
             
-            tbody.querySelectorAll('.delete-attendance').forEach(btn => {
+            tbody.querySelectorAll('.delete-guest-attendance').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const attendanceId = this.getAttribute('data-id');
-                    deleteAttendance(attendanceId);
+                    const guestId = this.getAttribute('data-id');
+                    deleteAllGuestAttendance(guestId);
                 });
             });
         }
@@ -1858,23 +1886,28 @@
                         new Date(guest.timestamp.seconds * 1000).toLocaleDateString('ar-EG')) : 
                     'غير محدد';
                 
-                // Check if guest has attended
-                const hasAttended = attendance.some(a => a.qrData === guest.qrData);
+                // حساب عدد مرات دخول هذا الضيف
+                const guestEntries = attendance.filter(a => a.qrData === guest.qrData);
+                const entryCount = guestEntries.length;
                 
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${guest.name || 'بدون اسم'}</td>
+                    <td>${guest.individualCount || 1}</td>
                     <td>
                         <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
                             <i class="fas fa-qrcode"></i> عرض QR
                         </button>
                     </td>
                     <td>${guest.quickCode || '--'}</td>
-                    <td>${guest.phone || '--'}</td>
-                    <td>${guest.email || '--'}</td>
                     <td>
-                        <span style="color: ${hasAttended ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">
-                            ${hasAttended ? 'حاضر' : 'غائب'}
+                        <span style="color: ${entryCount > 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">
+                            ${entryCount > 0 ? 'حاضر' : 'غائب'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge" style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 20px; font-weight: bold;">
+                            ${entryCount}
                         </span>
                     </td>
                     <td>${date}</td>
@@ -1888,7 +1921,7 @@
                 tbody.appendChild(row);
             });
             
-            // Add event listeners to the new buttons
+            // إضافة مستمعي الأحداث للأزرار
             tbody.querySelectorAll('.view-qr').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const guestId = this.getAttribute('data-id');
@@ -1908,9 +1941,7 @@
             e.preventDefault();
             
             const name = document.getElementById('guest-name').value.trim();
-            const phone = document.getElementById('guest-phone').value.trim();
-            const email = document.getElementById('guest-email').value.trim();
-            const notes = document.getElementById('guest-notes').value.trim();
+            const individualCount = parseInt(document.getElementById('guest-count').value) || 1;
             
             if (!name) {
                 showToast('يرجى إدخال اسم الضيف', 'warning');
@@ -1918,30 +1949,34 @@
                 return;
             }
             
+            if (individualCount < 1) {
+                showToast('عدد الأفراد يجب أن يكون 1 على الأقل', 'warning');
+                document.getElementById('guest-count').focus();
+                return;
+            }
+            
             try {
-                // Generate unique ID for QR
+                // توليد معرف فريد لـ QR
                 const qrData = `SMART_HALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 
-                // Generate 6-digit quick code (100000-999999)
+                // توليد رمز سريع مكون من 6 أرقام
                 const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
                 
-                // Show loading
+                // عرض حالة التحميل
                 const submitBtn = document.querySelector('#guest-form button[type="submit"]');
                 const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإنشاء...';
                 submitBtn.disabled = true;
                 
-                // Generate QR code image WITH QUICK CODE
-                const qrImageUrl = await generateQRCodeWithQuickCode(qrData, name, quickCode);
+                // توليد صورة QR مع الرمز السريع وعدد الأفراد
+                const qrImageUrl = await generateQRCodeWithDetails(qrData, name, quickCode, individualCount);
                 
-                // Save to Firestore
+                // حفظ في Firestore
                 const guestData = {
                     name,
-                    phone: phone || '',
-                    email: email || '',
-                    notes: notes || '',
+                    individualCount,
                     qrData,
-                    quickCode, // Add quick code here
+                    quickCode,
                     qrImageUrl,
                     timestamp: window.firebase.serverTimestamp()
                 };
@@ -1951,43 +1986,44 @@
                     guestData
                 );
                 
-                // Success
-                showToast(`تم إضافة الضيف "${name}" بنجاح - الرمز السريع: ${quickCode}`, 'success');
+                // نجاح
+                showToast(`تم إضافة الضيف "${name}" (${individualCount} أفراد) بنجاح - الرمز السريع: ${quickCode}`, 'success');
                 document.getElementById('guest-form').reset();
+                document.getElementById('guest-count').value = 1;
                 document.getElementById('add-guest-form').style.display = 'none';
                 
-                // Reload guests
+                // إعادة تحميل الضيوف
                 loadGuests();
                 
             } catch (error) {
                 console.error('Error adding guest:', error);
                 showToast(`حدث خطأ في إضافة الضيف: ${error.message}`, 'error');
             } finally {
-                // Restore button
+                // استعادة حالة الزر
                 const submitBtn = document.querySelector('#guest-form button[type="submit"]');
                 submitBtn.innerHTML = '<i class="fas fa-qrcode"></i> إنشاء QR وحفظ';
                 submitBtn.disabled = false;
             }
         }
         
-        function generateQRCodeWithQuickCode(qrData, name, quickCode) {
+        function generateQRCodeWithDetails(qrData, name, quickCode, individualCount) {
             return new Promise((resolve, reject) => {
                 try {
-                    // Create a canvas element
+                    // إنشاء عنصر canvas
                     const canvas = document.createElement('canvas');
-                    const size = 400; // زيادة الحجم ليتسع للاسم والرقم
+                    const size = 400;
                     
-                    // Set canvas size
+                    // تحديد حجم canvas
                     canvas.width = size;
-                    canvas.height = size + 80; // مساحة إضافية للاسم والرقم
+                    canvas.height = size + 100; // مساحة إضافية للمعلومات
                     
                     const ctx = canvas.getContext('2d');
                     
-                    // Fill background
+                    // تعيين الخلفية
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     
-                    // Generate QR code on temporary canvas
+                    // توليد QR code على canvas مؤقت
                     const qrCanvas = document.createElement('canvas');
                     
                     QRCode.toCanvas(qrCanvas, qrData, {
@@ -2001,34 +2037,39 @@
                         if (error) {
                             reject(error);
                         } else {
-                            // Draw QR code on main canvas
+                            // رسم QR code على canvas الرئيسي
                             const qrX = (canvas.width - 300) / 2;
-                            const qrY = 40;
+                            const qrY = 50;
                             ctx.drawImage(qrCanvas, qrX, qrY);
                             
-                            // Add name above QR code
-                            ctx.font = 'bold 20px Arial';
+                            // إضافة اسم الضيف فوق QR code
+                            ctx.font = 'bold 22px Arial';
                             ctx.fillStyle = '#000000';
                             ctx.textAlign = 'center';
-                            ctx.fillText(name, canvas.width / 2, 30);
+                            ctx.fillText(name, canvas.width / 2, 35);
                             
-                            // Add quick code below QR code
+                            // إضافة عدد الأفراد تحت الاسم
+                            ctx.font = 'bold 18px Arial';
+                            ctx.fillStyle = '#4361ee';
+                            ctx.fillText(`عدد الأفراد: ${individualCount}`, canvas.width / 2, 75);
+                            
+                            // إضافة الرمز السريع تحت QR code
                             ctx.font = 'bold 24px Arial';
-                            ctx.fillStyle = '#4361ee'; // لون أزرق
+                            ctx.fillStyle = '#f72585'; // لون مختلف
                             ctx.fillText(`الرمز السريع: ${quickCode}`, canvas.width / 2, qrY + 330);
                             
-                            // Add small instruction
+                            // إضافة تعليمات صغيرة
                             ctx.font = '14px Arial';
                             ctx.fillStyle = '#666666';
                             ctx.fillText('يمكن إدخال هذا الرقم يدوياً', canvas.width / 2, qrY + 360);
                             
-                            // Convert canvas to data URL
+                            // تحويل canvas إلى data URL
                             const dataUrl = canvas.toDataURL('image/png');
                             resolve(dataUrl);
                         }
                     });
                 } catch (error) {
-                    // Fallback to a simple URL if QR generation fails
+                    // استخدام رابط بديل إذا فشل توليد QR
                     console.warn('QR generation failed, using fallback:', error);
                     resolve(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}&qzone=2&format=png`);
                 }
@@ -2043,17 +2084,19 @@
             const title = document.getElementById('qr-modal-title');
             const imageContainer = document.getElementById('qr-modal-image');
             const guestName = document.getElementById('qr-modal-guest');
+            const guestCountDisplay = document.getElementById('guest-count-display');
             const quickCodeContainer = document.getElementById('qr-quickcode');
             
             title.textContent = `QR Code - ${guest.name}`;
             guestName.textContent = guest.name;
+            guestCountDisplay.textContent = guest.individualCount || 1;
             
             // عرض الرمز السريع
             if (guest.quickCode) {
                 quickCodeContainer.innerHTML = `
                     <div style="text-align: center;">
                         <p style="font-size: 16px; margin-bottom: 5px;">الرمز السريع:</p>
-                        <p style="font-size: 28px; font-weight: bold; color: #4361ee; letter-spacing: 3px; background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                        <p style="font-size: 28px; font-weight: bold; color: #f72585; letter-spacing: 3px; background: #f5f5f5; padding: 10px; border-radius: 5px;">
                             ${guest.quickCode}
                         </p>
                         <p style="font-size: 14px; color: #666; margin-top: 5px;">يمكن إدخال هذا الرقم يدوياً</p>
@@ -2063,24 +2106,24 @@
                 quickCodeContainer.innerHTML = '<p style="color: #999;">لا يوجد رمز سريع</p>';
             }
             
-            // Clear previous image
+            // مسح الصورة السابقة
             imageContainer.innerHTML = '';
             
-            // Create and add image
+            // إنشاء وإضافة الصورة
             const img = document.createElement('img');
             img.src = guest.qrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(guest.qrData || guest.id)}`;
-            img.alt = `QR Code for ${guest.name}`;
+            img.alt = `QR Code لـ ${guest.name}`;
             img.style.width = '100%';
             img.style.maxWidth = '400px';
             img.style.borderRadius = '8px';
             
             imageContainer.appendChild(img);
             
-            // Show modal
+            // عرض النافذة المنبثقة
             modal.style.display = 'flex';
         }
         
-        function printQRImage(guestName, qrImageUrl, quickCode) {
+        function printQRImage(guestName, guestCount, qrImageUrl, quickCode) {
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <!DOCTYPE html>
@@ -2109,12 +2152,18 @@
                             margin: 20px 0; 
                             border: 1px solid #eee;
                         }
+                        .guest-info {
+                            background-color: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 8px;
+                            margin: 15px 0;
+                        }
                         .quick-code {
                             font-family: monospace;
                             font-size: 28px;
                             font-weight: bold;
                             letter-spacing: 5px;
-                            color: #4361ee;
+                            color: #f72585;
                             background: #f5f5f5;
                             padding: 15px;
                             border-radius: 5px;
@@ -2142,7 +2191,11 @@
                 <body>
                     <div class="container">
                         <h2>Smart Banquet Hall</h2>
-                        <h3>بطاقة ضيف: ${guestName}</h3>
+                        <h3>بطاقة ضيف</h3>
+                        <div class="guest-info">
+                            <p style="font-size: 1.4rem; font-weight: bold; margin-bottom: 10px;">${guestName}</p>
+                            <p style="color: #4361ee; font-weight: bold;">عدد الأفراد: ${guestCount}</p>
+                        </div>
                         <div class="info">
                             <p>يرجى عرض هذا الرمز عند المدخل</p>
                         </div>
@@ -2208,11 +2261,16 @@
                             height: 40px;
                             overflow: hidden;
                         }
+                        .guest-count {
+                            color: #4361ee;
+                            font-weight: bold;
+                            margin: 5px 0;
+                        }
                         .quick-code {
                             font-family: monospace;
                             font-size: 18px;
                             font-weight: bold;
-                            color: #4361ee;
+                            color: #f72585;
                             background: #f5f5f5;
                             padding: 8px;
                             border-radius: 3px;
@@ -2266,9 +2324,9 @@
                 content += `
                     <div class="qr-card">
                         <h4>${guest.name}</h4>
+                        <div class="guest-count">عدد الأفراد: ${guest.individualCount || 1}</div>
                         <img src="${qrUrl}" alt="QR Code">
                         <div class="quick-code">${guest.quickCode || '--'}</div>
-                        ${guest.phone ? `<p>${guest.phone}</p>` : ''}
                     </div>
                 `;
             });
@@ -2304,19 +2362,29 @@
             }
         }
         
-        async function deleteAttendance(attendanceId) {
-            if (!confirm('هل أنت متأكد من حذف سجل الحضور هذا؟')) return;
+        async function deleteAllGuestAttendance(guestId) {
+            const guest = guests.find(g => g.id === guestId);
+            if (!guest) return;
+            
+            if (!confirm(`هل أنت متأكد من حذف جميع سجلات دخول ${guest.name}؟`)) return;
             
             try {
-                await window.firebase.deleteDoc(
-                    window.firebase.doc(window.firebase.db, 'attendance', attendanceId)
+                // العثور على جميع سجلات الحضور لهذا الضيف
+                const guestAttendance = attendance.filter(a => a.qrData === guest.qrData);
+                
+                const deletePromises = guestAttendance.map(record =>
+                    window.firebase.deleteDoc(
+                        window.firebase.doc(window.firebase.db, 'attendance', record.id)
+                    )
                 );
                 
-                showToast('تم حذف سجل الحضور بنجاح', 'success');
+                await Promise.all(deletePromises);
+                
+                showToast(`تم حذف جميع سجلات دخول ${guest.name}`, 'success');
                 loadAttendance();
             } catch (error) {
-                console.error('Error deleting attendance:', error);
-                showToast('حدث خطأ في حذف سجل الحضور', 'error');
+                console.error('Error deleting guest attendance:', error);
+                showToast('حدث خطأ في حذف سجلات الدخول', 'error');
             }
         }
         
@@ -2381,14 +2449,14 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // Get first sheet
+                    // الحصول على أول ورقة
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     
-                    // Convert to JSON
+                    // التحويل إلى JSON
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     
-                    // Extract guest names (assuming first column is names)
+                    // استخراج أسماء الضيوف (العمود الأول) وعدد الأفراد (العمود الثاني)
                     const guestRows = jsonData.filter(row => row && row.length > 0 && row[0]);
                     
                     if (guestRows.length === 0) {
@@ -2397,24 +2465,25 @@
                         return;
                     }
                     
-                    // Skip header if exists
+                    // تخطي العنوان إذا كان موجوداً
                     const startRow = (guestRows[0][0].toString().toLowerCase().includes('اسم') || 
                                      guestRows[0][0].toString().toLowerCase().includes('name')) ? 1 : 0;
                     
-                    const guestNames = [];
+                    const guestList = [];
                     for (let i = startRow; i < guestRows.length; i++) {
                         const name = guestRows[i][0] ? guestRows[i][0].toString().trim() : '';
                         if (name) {
-                            guestNames.push({
+                            const individualCount = guestRows[i][1] ? 
+                                parseInt(guestRows[i][1].toString().trim()) || 1 : 1;
+                            
+                            guestList.push({
                                 name: name,
-                                phone: guestRows[i][1] ? guestRows[i][1].toString().trim() : '',
-                                email: guestRows[i][2] ? guestRows[i][2].toString().trim() : '',
-                                notes: guestRows[i][3] ? guestRows[i][3].toString().trim() : ''
+                                individualCount: Math.max(1, Math.min(individualCount, 20)) // تقييد بين 1 و 20
                             });
                         }
                     }
                     
-                    if (guestNames.length === 0) {
+                    if (guestList.length === 0) {
                         showToast('لا توجد أسماء ضيوف في الملف', 'warning');
                         progressDiv.style.display = 'none';
                         return;
@@ -2423,30 +2492,28 @@
                     let successCount = 0;
                     let errorCount = 0;
                     
-                    for (let i = 0; i < guestNames.length; i++) {
-                        const guest = guestNames[i];
+                    for (let i = 0; i < guestList.length; i++) {
+                        const guest = guestList[i];
                         
-                        // Update progress
-                        const progress = Math.round(((i + 1) / guestNames.length) * 100);
+                        // تحديث التقدم
+                        const progress = Math.round(((i + 1) / guestList.length) * 100);
                         progressBar.style.width = `${progress}%`;
-                        progressText.textContent = `${progress}% (${i + 1}/${guestNames.length})`;
+                        progressText.textContent = `${progress}% (${i + 1}/${guestList.length})`;
                         
                         try {
-                            // Generate unique ID for QR
+                            // توليد معرف فريد لـ QR
                             const qrData = `SMART_HALL_EXCEL_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
                             
-                            // Generate 6-digit quick code
+                            // توليد رمز سريع مكون من 6 أرقام
                             const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
                             
-                            // Generate QR code image WITH QUICK CODE
-                            const qrImageUrl = await generateQRCodeWithQuickCode(qrData, guest.name, quickCode);
+                            // توليد صورة QR مع التفاصيل
+                            const qrImageUrl = await generateQRCodeWithDetails(qrData, guest.name, quickCode, guest.individualCount);
                             
-                            // Save to Firestore
+                            // حفظ في Firestore
                             const guestData = {
                                 name: guest.name,
-                                phone: guest.phone || '',
-                                email: guest.email || '',
-                                notes: guest.notes || '',
+                                individualCount: guest.individualCount,
                                 qrData,
                                 quickCode,
                                 qrImageUrl,
@@ -2465,7 +2532,7 @@
                         }
                     }
                     
-                    // Complete
+                    // الانتهاء
                     progressDiv.style.display = 'none';
                     
                     if (successCount > 0) {
@@ -2474,10 +2541,10 @@
                         showToast('فشل في إضافة أي ضيف', 'error');
                     }
                     
-                    // Clear file input
+                    // مسح حقل الملف
                     fileInput.value = '';
                     
-                    // Reload guests
+                    // إعادة تحميل الضيوف
                     loadGuests();
                     
                 } catch (error) {
@@ -2496,21 +2563,21 @@
         }
         
         function downloadExcelTemplate() {
-            // Create a simple Excel template
+            // إنشاء نموذج Excel بسيط
             const data = [
-                ['اسم الضيف', 'رقم الهاتف', 'البريد الإلكتروني', 'ملاحظات'],
-                ['أحمد محمد', '01012345678', 'ahmed@example.com', 'ضيف شرف'],
-                ['سارة خالد', '01198765432', 'sara@example.com', ''],
-                ['محمود علي', '01234567890', 'mohamed@example.com', 'سيحضر مع عائلته'],
-                ['فاطمة حسن', '01555555555', 'fatma@example.com', 'نباتية'],
-                ['خالد محمود', '', 'khaled@example.com', 'لديه حساسية من المكسرات']
+                ['اسم الضيف', 'عدد الأفراد'],
+                ['أحمد محمد', '2'],
+                ['سارة خالد', '4'],
+                ['محمود علي', '1'],
+                ['فاطمة حسن', '3'],
+                ['خالد محمود', '5']
             ];
             
             const worksheet = XLSX.utils.aoa_to_sheet(data);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'الضيوف');
             
-            // Generate and download file
+            // توليد وتحميل الملف
             XLSX.writeFile(workbook, 'نموذج_الضيوف.xlsx');
             showToast('تم تحميل النموذج بنجاح', 'success');
         }
@@ -2523,12 +2590,13 @@
             
             // Prepare data for Excel
             const data = [
-                ['اسم الضيف', 'الرمز السريع', 'رمز QR', 'وقت المسح', 'تم فتح الباب', 'ملاحظات']
+                ['اسم الضيف', 'عدد الأفراد', 'الرمز السريع', 'رمز QR', 'رقم الدخول', 'وقت المسح', 'تم فتح الباب', 'ملاحظات']
             ];
             
             attendance.forEach(record => {
                 const guest = guests.find(g => g.qrData === record.qrData);
                 const guestName = guest ? guest.name : 'ضيف غير معروف';
+                const individualCount = guest ? guest.individualCount || 1 : 1;
                 const quickCode = guest ? guest.quickCode : '--';
                 
                 let scanTime = 'غير محدد';
@@ -2542,8 +2610,10 @@
                 
                 data.push([
                     guestName,
+                    individualCount,
                     quickCode,
                     record.qrData,
+                    record.entryNumber || 1,
                     scanTime,
                     record.doorOpened ? 'نعم' : 'لا',
                     record.notes || ''
@@ -2726,38 +2796,42 @@
             if (guest) {
                 // Valid guest
                 guestName.textContent = `مرحباً ${guest.name}!`;
-                scanMessage.textContent = `تم التعرف على QR بنجاح - الرمز السريع: ${guest.quickCode}`;
+                scanMessage.textContent = `تم التعرف على QR بنجاح - عدد الأفراد: ${guest.individualCount || 1}`;
                 scanMessage.style.color = 'var(--success-color)';
                 
-                // Check if already attended
-                const alreadyAttended = attendance.some(a => a.qrData === guest.qrData);
+                // حساب عدد مرات الدخول السابقة
+                const previousEntries = attendance.filter(a => a.qrData === guest.qrData);
+                const entryCount = previousEntries.length + 1;
                 
                 scanDetails.innerHTML = `
                     <p><strong>اسم الضيف:</strong> ${guest.name}</p>
-                    <p><strong>الرمز السريع:</strong> ${guest.quickCode}</p>
-                    ${guest.phone ? `<p><strong>رقم الهاتف:</strong> ${guest.phone}</p>` : ''}
+                    <p><strong>عدد الأفراد:</strong> ${guest.individualCount || 1}</p>
+                    <p><strong>عدد مرات الدخول:</strong> ${entryCount}</p>
+                    ${previousEntries.length > 0 ? 
+                        `<p><strong>آخر دخول:</strong> ${formatDate(previousEntries[0].scanTime)}</p>` : 
+                        ''}
                     <div style="margin-top: 20px;">
                         <button id="open-door-for-guest" class="btn btn-success">
-                            <i class="fas fa-door-open"></i> فتح الباب للضيف
+                            <i class="fas fa-door-open"></i> فتح الباب للضيف (${guest.individualCount || 1} فرد)
                         </button>
                     </div>
                 `;
                 
-                // Save attendance record
-                await saveAttendanceRecord(guest, alreadyAttended);
+                // حفظ سجل الحضور
+                await saveAttendanceRecord(guest, entryCount);
                 
-                // Open door automatically
-                openDoorForGuest(guest.name);
+                // فتح الباب تلقائياً
+                openDoorForGuest(guest.name, guest.individualCount || 1);
                 
-                // Add event listener to open door button (manual override)
+                // إضافة مستمع الحدث لزر فتح الباب (تجاوز يدوي)
                 setTimeout(() => {
                     document.getElementById('open-door-for-guest')?.addEventListener('click', () => {
-                        openDoorForGuest(guest.name);
+                        openDoorForGuest(guest.name, guest.individualCount || 1);
                     });
                 }, 100);
                 
             } else {
-                // Invalid QR
+                // QR غير صالح
                 guestName.textContent = 'لم يتم التعرف على QR';
                 scanMessage.textContent = 'رمز QR أو الرمز السريع غير صالح أو غير مسجل في النظام';
                 scanMessage.style.color = 'var(--danger-color)';
@@ -2772,32 +2846,34 @@
                     </div>
                 `;
                 
-                // Send command to ESP8266 to display error on LCD
+                // إرسال أمر إلى ESP8266 لعرض خطأ على شاشة LCD
                 sendESPCommand('LCD_ERROR');
                 
-                // Add event listener to retry button
+                // إضافة مستمع الحدث لزر المحاولة مرة أخرى
                 setTimeout(() => {
                     document.getElementById('retry-scan')?.addEventListener('click', () => {
                         scanDetails.innerHTML = '';
-                        // Cooldown already started, no need to restart scanner here
+                        // تم بدء التبريد بالفعل، لا حاجة لإعادة تشغيل الماسح هنا
                     });
                 }, 100);
             }
             
-            // Show result
+            // عرض النتيجة
             scannerResult.style.display = 'block';
         }
         
-        async function saveAttendanceRecord(guest, alreadyAttended) {
+        async function saveAttendanceRecord(guest, entryCount) {
             try {
                 const attendanceData = {
                     guestId: guest.id,
                     guestName: guest.name,
+                    individualCount: guest.individualCount || 1,
                     quickCode: guest.quickCode,
                     qrData: guest.qrData,
                     scanTime: window.firebase.serverTimestamp(),
+                    entryNumber: entryCount,
                     doorOpened: true,
-                    notes: alreadyAttended ? 'دخول متكرر' : 'أول دخول'
+                    notes: entryCount > 1 ? `الدخول رقم ${entryCount}` : 'أول دخول'
                 };
                 
                 await window.firebase.addDoc(
@@ -2805,7 +2881,7 @@
                     attendanceData
                 );
                 
-                // Reload attendance
+                // إعادة تحميل سجلات الحضور
                 loadAttendance();
                 
             } catch (error) {
@@ -2813,7 +2889,23 @@
             }
         }
         
-        function openDoorForGuest(guestName) {
+        function formatDate(dateObj) {
+            if (!dateObj) return 'غير محدد';
+            
+            try {
+                if (dateObj.toDate) {
+                    return dateObj.toDate().toLocaleString('ar-EG');
+                } else if (dateObj.seconds) {
+                    return new Date(dateObj.seconds * 1000).toLocaleString('ar-EG');
+                } else {
+                    return 'غير محدد';
+                }
+            } catch (error) {
+                return 'غير محدد';
+            }
+        }
+        
+        function openDoorForGuest(guestName, individualCount) {
             // Update UI
             document.getElementById('door-control-status').className = 'control-status status-on';
             document.getElementById('door-control-status').textContent = 'مفتوح';
@@ -2825,7 +2917,7 @@
             // Send command to ESP8266 to open door
             sendESPCommand('DOOR_OPEN');
             
-            showToast(`تم فتح الباب لـ ${guestName}`, 'success');
+            showToast(`تم فتح الباب لـ ${guestName} (${individualCount} فرد)`, 'success');
             
             // Auto close after 10 seconds
             setTimeout(() => {
