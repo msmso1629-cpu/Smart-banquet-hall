@@ -1190,9 +1190,9 @@
                             </p>
                         </div>
 
-                        <!-- Light 1 Control -->
+                        <!-- Light 1 Control (D2/GPIO4) -->
                         <div class="control-card">
-                            <h4><i class="fas fa-lightbulb"></i> الإضاءة الرئيسية</h4>
+                            <h4><i class="fas fa-lightbulb"></i> الإضاءة الرئيسية (D2)</h4>
                             <div class="control-status status-off" id="light1-control-status">
                                 مطفأة
                             </div>
@@ -1205,13 +1205,13 @@
                                 </button>
                             </div>
                             <p style="margin-top: 15px; color: var(--gray-color); font-size: 0.9rem;">
-                                التحكم في الإضاءة الرئيسية للقاعة
+                                التحكم في الإضاءة الرئيسية للقاعة (الدبوس D2)
                             </p>
                         </div>
 
-                        <!-- Light 2 Control -->
+                        <!-- Light 2 Control (D3/GPIO0) -->
                         <div class="control-card">
-                            <h4><i class="fas fa-lightbulb"></i> إضاءة المسرح</h4>
+                            <h4><i class="fas fa-lightbulb"></i> إضاءة المسرح (D3)</h4>
                             <div class="control-status status-off" id="light2-control-status">
                                 مطفأة
                             </div>
@@ -1224,7 +1224,7 @@
                                 </button>
                             </div>
                             <p style="margin-top: 15px; color: var(--gray-color); font-size: 0.9rem;">
-                                التحكم في إضاءة المسرح والمنصة
+                                التحكم في إضاءة المسرح والمنصة (الدبوس D3)
                             </p>
                         </div>
 
@@ -1266,16 +1266,22 @@
                                     <i class="fas fa-door-closed"></i> إغلاق الباب
                                 </button>
                                 <button class="btn btn-outline esp-command" data-command="LIGHT1_ON">
-                                    <i class="fas fa-lightbulb"></i> تشغيل LED 1
+                                    <i class="fas fa-lightbulb"></i> تشغيل LED 1 (D2)
                                 </button>
                                 <button class="btn btn-outline esp-command" data-command="LIGHT1_OFF">
-                                    <i class="fas fa-lightbulb"></i> إطفاء LED 1
+                                    <i class="fas fa-lightbulb"></i> إطفاء LED 1 (D2)
                                 </button>
                                 <button class="btn btn-outline esp-command" data-command="LIGHT2_ON">
-                                    <i class="fas fa-lightbulb"></i> تشغيل LED 2
+                                    <i class="fas fa-lightbulb"></i> تشغيل LED 2 (D3)
                                 </button>
                                 <button class="btn btn-outline esp-command" data-command="LIGHT2_OFF">
-                                    <i class="fas fa-lightbulb"></i> إطفاء LED 2
+                                    <i class="fas fa-lightbulb"></i> إطفاء LED 2 (D3)
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="ALL_LIGHTS_ON">
+                                    <i class="fas fa-lightbulb"></i> تشغيل كل الأنوار
+                                </button>
+                                <button class="btn btn-outline esp-command" data-command="ALL_LIGHTS_OFF">
+                                    <i class="fas fa-lightbulb"></i> إطفاء كل الأنوار
                                 </button>
                                 <button class="btn btn-outline esp-command" data-command="LCD_WELCOME">
                                     <i class="fas fa-tv"></i> عرض Welcome
@@ -1360,8 +1366,8 @@
         <footer>
             <div class="container">
                 <div class="footer-content">
-                    <p>Smart Banquet Hall System &copy; 2026 - نظام القاعة الذكية</p>
-                    <p>جميع الحقوق محفوظة | تم التطوير بواسطة team SmartFlux</p>
+                    <p>Smart Banquet Hall System &copy; 2024 - نظام القاعة الذكية</p>
+                    <p>جميع الحقوق محفوظة | تم التطوير بواسطة فريق SmartFlux</p>
                     <div style="display: flex; gap: 15px; margin-top: 10px;">
                         <i class="fas fa-fire" style="color: #FFA611;"></i>
                         <i class="fas fa-microchip" style="color: #4CC9F0;"></i>
@@ -1625,9 +1631,9 @@
             document.getElementById('open-door-btn')?.addEventListener('click', () => openDoor());
             document.getElementById('close-door-btn')?.addEventListener('click', closeDoor);
             
-            // Light controls
-            document.getElementById('quick-lights-on')?.addEventListener('click', () => turnOnAllLights());
-            document.getElementById('quick-lights-off')?.addEventListener('click', () => turnOffAllLights());
+            // Light controls - تم التعديل هنا
+            document.getElementById('quick-lights-on')?.addEventListener('click', turnOnAllLights);
+            document.getElementById('quick-lights-off')?.addEventListener('click', turnOffAllLights);
             
             document.getElementById('light1-on-btn')?.addEventListener('click', () => toggleLight(1, true));
             document.getElementById('light1-off-btn')?.addEventListener('click', () => toggleLight(1, false));
@@ -2972,6 +2978,8 @@
             showToast('تم إرسال أمر إغلاق الباب', 'success');
         }
         
+        // ==================== وظائف التحكم في الإضاءة المحدثة ====================
+        
         function toggleLight(lightNumber, turnOn) {
             const statusElement = document.getElementById(`light${lightNumber}-control-status`);
             const onBtn = document.getElementById(`light${lightNumber}-on-btn`);
@@ -2983,8 +2991,12 @@
                 onBtn.disabled = true;
                 offBtn.disabled = false;
                 
-                // Send command to ESP8266
+                // تحديث Firebase مباشرة
+                updateLightStatusInFirebase(lightNumber, true);
+                
+                // إرسال أمر إلى ESP8266
                 sendESPCommand(`LIGHT${lightNumber}_ON`);
+                
                 showToast(`تم تشغيل الإضاءة ${lightNumber}`, 'success');
             } else {
                 statusElement.className = 'control-status status-off';
@@ -2992,24 +3004,91 @@
                 onBtn.disabled = false;
                 offBtn.disabled = true;
                 
-                // Send command to ESP8266
+                // تحديث Firebase مباشرة
+                updateLightStatusInFirebase(lightNumber, false);
+                
+                // إرسال أمر إلى ESP8266
                 sendESPCommand(`LIGHT${lightNumber}_OFF`);
+                
                 showToast(`تم إطفاء الإضاءة ${lightNumber}`, 'success');
             }
             
-            // Update overall lights status
+            // تحديث حالة الأنوار الكلية
             updateLightsStatus();
         }
         
+        function updateLightStatusInFirebase(lightNumber, isOn) {
+            if (window.firebase && window.firebase.rtdb) {
+                const path = `/devices/light${lightNumber}/status`;
+                window.firebase.set(window.firebase.ref(window.firebase.rtdb, path), isOn)
+                    .then(() => {
+                        console.log(`Light ${lightNumber} status updated in Firebase: ${isOn}`);
+                        
+                        // تحديث الوقت أيضاً
+                        const timePath = `/devices/light${lightNumber}/lastChange`;
+                        window.firebase.set(window.firebase.ref(window.firebase.rtdb, timePath), Date.now());
+                    })
+                    .catch(error => {
+                        console.error(`Error updating light ${lightNumber} status:`, error);
+                    });
+            }
+        }
+        
+        // ==================== دالة تشغيل كل الأنوار ====================
         function turnOnAllLights() {
-            toggleLight(1, true);
-            toggleLight(2, true);
+            console.log("تشغيل جميع الأنوار...");
+            
+            // تحديث حالة الأضواء في Firebase مباشرة
+            updateLightStatusInFirebase(1, true);
+            updateLightStatusInFirebase(2, true);
+            
+            // إرسال أمر مباشر إلى ESP8266
+            sendESPCommand('ALL_LIGHTS_ON');
+            
+            // تحديث واجهة المستخدم فوراً
+            setTimeout(() => {
+                document.getElementById('light1-control-status').className = 'control-status status-on';
+                document.getElementById('light1-control-status').textContent = 'مشغلة';
+                document.getElementById('light1-on-btn').disabled = true;
+                document.getElementById('light1-off-btn').disabled = false;
+                
+                document.getElementById('light2-control-status').className = 'control-status status-on';
+                document.getElementById('light2-control-status').textContent = 'مشغلة';
+                document.getElementById('light2-on-btn').disabled = true;
+                document.getElementById('light2-off-btn').disabled = false;
+                
+                document.getElementById('lights-status').textContent = 'مشغلة';
+            }, 300);
+            
             showToast('تم تشغيل جميع الأنوار', 'success');
         }
         
+        // ==================== دالة إطفاء كل الأنوار ====================
         function turnOffAllLights() {
-            toggleLight(1, false);
-            toggleLight(2, false);
+            console.log("إطفاء جميع الأنوار...");
+            
+            // تحديث حالة الأضواء في Firebase مباشرة
+            updateLightStatusInFirebase(1, false);
+            updateLightStatusInFirebase(2, false);
+            
+            // إرسال أمر مباشر إلى ESP8266
+            sendESPCommand('ALL_LIGHTS_OFF');
+            
+            // تحديث واجهة المستخدم فوراً
+            setTimeout(() => {
+                document.getElementById('light1-control-status').className = 'control-status status-off';
+                document.getElementById('light1-control-status').textContent = 'مطفأة';
+                document.getElementById('light1-on-btn').disabled = false;
+                document.getElementById('light1-off-btn').disabled = true;
+                
+                document.getElementById('light2-control-status').className = 'control-status status-off';
+                document.getElementById('light2-control-status').textContent = 'مطفأة';
+                document.getElementById('light2-on-btn').disabled = false;
+                document.getElementById('light2-off-btn').disabled = true;
+                
+                document.getElementById('lights-status').textContent = 'مطفأة';
+            }, 300);
+            
             showToast('تم إطفاء جميع الأنوار', 'success');
         }
         
@@ -3025,13 +3104,9 @@
         }
         
         function sendESPCommand(command) {
-            // In a real implementation, this would send data to ESP8266
-            // For now, we'll simulate it and update Firebase
-            
             console.log(`Sending command to ESP8266: ${command}`);
             
-            // Update Firebase Realtime Database with command
-            const commandRef = window.firebase.ref(window.firebase.rtdb, 'commands');
+            // تحديث Firebase Realtime Database مع الأمر
             window.firebase.set(window.firebase.ref(window.firebase.rtdb, 'commands/latest'), {
                 command: command,
                 timestamp: Date.now(),
@@ -3040,8 +3115,9 @@
             .then(() => {
                 console.log(`Command ${command} sent to Firebase`);
                 
-                // Also update the last update time
+                // تحديث وقت آخر تحديث
                 document.getElementById('last-update').textContent = 'الآن';
+                showToast(`تم إرسال الأمر: ${command}`, 'success');
             })
             .catch(error => {
                 console.error('Error sending command:', error);
@@ -3256,19 +3332,19 @@
             
             if (indoorTemp > 28) {
                 adviceElement.className = 'temp-advice advice-hot';
-                adviceElement.innerHTML = '<i class="fas fa-fire"></i> الجو شوب قوي – علي التكييف';
+                adviceElement.innerHTML = '<i class="fas fa-fire"></i> الجو حار جداً – قلل التكييف';
             } else if (indoorTemp < 20) {
                 adviceElement.className = 'temp-advice advice-cold';
-                adviceElement.innerHTML = '<i class="fas fa-snowflake"></i> انا متلج – قلل التكييف شوية';
+                adviceElement.innerHTML = '<i class="fas fa-snowflake"></i> الجو بارد – زد التكييف';
             } else if (tempDifference > 5) {
                 adviceElement.className = 'temp-advice advice-cold';
                 adviceElement.innerHTML = '<i class="fas fa-thermometer-empty"></i> الفرق كبير – قلل التكييف';
             } else if (tempDifference < -5) {
                 adviceElement.className = 'temp-advice advice-hot';
-                adviceElement.innerHTML = '<i class="fas fa-thermometer-full"></i> الخارج حار – زود التكييف';
+                adviceElement.innerHTML = '<i class="fas fa-thermometer-full"></i> الخارج حار – زد التكييف';
             } else {
                 adviceElement.className = 'temp-advice advice-good';
-                adviceElement.innerHTML = '<i class="fas fa-thumbs-up"></i> درجة الحرارة مناسبة – حالته تمام';
+                adviceElement.innerHTML = '<i class="fas fa-thumbs-up"></i> درجة الحرارة مناسبة – حالة ممتازة';
             }
         }
         
