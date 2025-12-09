@@ -452,6 +452,11 @@
             color: var(--danger-color);
         }
 
+        .status-processing {
+            background-color: rgba(248, 150, 30, 0.1);
+            color: var(--warning-color);
+        }
+
         .control-buttons {
             display: flex;
             gap: 10px;
@@ -617,6 +622,10 @@
 
         .toast.warning {
             border-right: 4px solid var(--warning-color);
+        }
+
+        .toast.info {
+            border-right: 4px solid var(--primary-color);
         }
 
         /* Scanner */
@@ -1381,7 +1390,7 @@
                         <div class="control-card">
                             <h4><i class="fas fa-door-open"></i> التحكم في الباب</h4>
                             <div class="control-status status-off" id="door-control-status">
-                                مغلق
+                                <i class="fas fa-door-closed"></i> مغلق
                             </div>
                             <div class="control-buttons">
                                 <button id="open-door-btn" class="btn btn-success">
@@ -1400,7 +1409,7 @@
                         <div class="control-card">
                             <h4><i class="fas fa-lightbulb"></i> الإضاءة الرئيسية (D2)</h4>
                             <div class="control-status status-off" id="light1-control-status">
-                                مطفأة
+                                <i class="fas fa-lightbulb"></i> مطفأة
                             </div>
                             <div class="control-buttons">
                                 <button id="light1-on-btn" class="btn btn-success">
@@ -1419,7 +1428,7 @@
                         <div class="control-card">
                             <h4><i class="fas fa-lightbulb"></i> إضاءة المسرح (D3)</h4>
                             <div class="control-status status-off" id="light2-control-status">
-                                مطفأة
+                                <i class="fas fa-lightbulb"></i> مطفأة
                             </div>
                             <div class="control-buttons">
                                 <button id="light2-on-btn" class="btn btn-success">
@@ -1711,1293 +1720,1297 @@
                 <button id="print-qr-btn" class="btn btn-primary">
                     <i class="fas fa-print"></i> طباعة
                 </button>
-                <button id="close-qr-modal" class="btn btn-outline">
-                    <i class="fas fa-times"></i> إغلاق
-                </button>
-            </div>
-        </div>
-    </div>
+                                <button id="close-qr-modal" class="btn btn-outline">
+                                    <i class="fas fa-times"></i> إغلاق
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-    <!-- JavaScript Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    
-    <!-- Main Application Script -->
-    <script>
-        // Global variables
-        let currentUser = null;
-        let guests = [];
-        let attendance = [];
-        let scannerActive = false;
-        let videoStream = null;
-        let qrScannerInterval = null;
-        let scannerCooldown = false;
-        let cooldownTimer = 5;
-        let cooldownInterval = null;
-        let weatherHistory = [];
-        let realTimeInterval = null;
-        let isRecording = false;
-        let recordingStartTime = null;
-        let lastAnalysisTime = 0;
-        
-        // Initialize the application when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-        });
-        
-        function initializeApp() {
-            // Check authentication state
-            window.firebase.onAuthStateChanged(window.firebase.auth, (user) => {
-                if (user) {
-                    // User is signed in
-                    currentUser = user;
-                    showApp();
-                    updateUserInfo();
-                    loadGuests();
-                    loadAttendance();
-                    setupRealtimeListeners();
-                    updateTime();
-                    setInterval(updateTime, 1000);
+                    <!-- JavaScript Libraries -->
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+                    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+                    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
                     
-                    // بدء التحديث التلقائي كل 2 ثانية
-                    startRealTimeUpdates();
-                    
-                    // تحميل وتحليل بيانات الطقس
-                    loadAndAnalyzeWeatherData();
-                    
-                    // تحميل البيانات التاريخية
-                    loadHistoricalData();
-                    
-                } else {
-                    // User is signed out
-                    showLogin();
-                }
-            });
-            
-            // Setup event listeners
-            setupEventListeners();
-        }
-        
-        function startRealTimeUpdates() {
-            // إيقاف أي فاصل زمني سابق
-            if (realTimeInterval) {
-                clearInterval(realTimeInterval);
-            }
-            
-            // بدء التحديث التلقائي كل 2 ثانية
-            realTimeInterval = setInterval(() => {
-                // تحديث التحليل كل 2 ثانية فقط إذا كان قسم الطقس نشطاً
-                if (document.getElementById('weather').classList.contains('active')) {
-                    const now = Date.now();
-                    if (now - lastAnalysisTime > 2000) { // تحديث كل 2 ثانية
-                        lastAnalysisTime = now;
-                        updateRealTimeAnalysis();
-                    }
-                }
-            }, 2000); // 2000 مللي ثانية = 2 ثانية
-        }
-        
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            const toastIcon = toast.querySelector('i');
-            
-            toastMessage.textContent = message;
-            
-            // Set icon and color based on type
-            switch(type) {
-                case 'success':
-                    toast.className = 'toast success show';
-                    toastIcon.className = 'fas fa-check-circle';
-                    break;
-                case 'error':
-                    toast.className = 'toast error show';
-                    toastIcon.className = 'fas fa-exclamation-circle';
-                    break;
-                case 'warning':
-                    toast.className = 'toast warning show';
-                    toastIcon.className = 'fas fa-exclamation-triangle';
-                    break;
-                default:
-                    toast.className = 'toast show';
-                    toastIcon.className = 'fas fa-info-circle';
-            }
-            
-            // Auto hide after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-        
-        function showLogin() {
-            document.getElementById('login-page').style.display = 'flex';
-            document.getElementById('app-container').style.display = 'none';
-        }
-        
-        function showApp() {
-            document.getElementById('login-page').style.display = 'none';
-            document.getElementById('app-container').style.display = 'block';
-        }
-        
-        function updateUserInfo() {
-            if (currentUser) {
-                const avatar = document.getElementById('user-avatar');
-                const email = currentUser.email;
-                avatar.textContent = email.charAt(0).toUpperCase();
-            }
-        }
-        
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ar-EG');
-            const dateString = now.toLocaleDateString('ar-EG', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            
-            const timeElement = document.getElementById('current-time');
-            if (timeElement) {
-                timeElement.textContent = `الوقت: ${timeString}`;
-                timeElement.title = dateString;
-            }
-        }
-        
-        function setupEventListeners() {
-            // Login form
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
-            
-            // Logout button
-            document.getElementById('logout-btn').addEventListener('click', handleLogout);
-            
-            // Navigation tabs
-            document.querySelectorAll('.nav-tabs a').forEach(tab => {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Update active tab
-                    document.querySelectorAll('.nav-tabs a').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Show corresponding section
-                    const sectionId = this.getAttribute('data-section');
-                    document.querySelectorAll('.content-section').forEach(section => {
-                        section.classList.remove('active');
-                    });
-                    document.getElementById(sectionId).classList.add('active');
-                    
-                    // Special handling for scanner section
-                    if (sectionId === 'scanner') {
-                        // Stop scanner if it's active
-                        if (scannerActive) {
-                            toggleScanner();
-                        }
-                    }
-                    
-                    // Refresh weather analysis when switching to weather section
-                    if (sectionId === 'weather') {
-                        setTimeout(() => {
-                            loadAndAnalyzeWeatherData();
-                        }, 300);
-                    }
-                });
-            });
-            
-            // Quick navigation from dashboard
-            document.getElementById('quick-add-guest')?.addEventListener('click', function() {
-                // Switch to guests section and show form
-                document.querySelector('.nav-tabs a[data-section="guests"]').click();
-                setTimeout(() => {
-                    document.getElementById('add-guest-form').style.display = 'block';
-                    document.getElementById('guest-name').focus();
-                }, 100);
-            });
-            
-            document.getElementById('quick-scan')?.addEventListener('click', function() {
-                document.querySelector('.nav-tabs a[data-section="scanner"]').click();
-                setTimeout(() => {
-                    document.getElementById('toggle-scanner').click();
-                }, 100);
-            });
-            
-            // Guest management
-            document.getElementById('add-guest-btn')?.addEventListener('click', function() {
-                document.getElementById('add-guest-form').style.display = 'block';
-                document.getElementById('guest-name').focus();
-            });
-            
-            document.getElementById('close-form')?.addEventListener('click', function() {
-                document.getElementById('add-guest-form').style.display = 'none';
-                document.getElementById('guest-form').reset();
-                document.getElementById('guest-count').value = 1;
-            });
-            
-            document.getElementById('cancel-form')?.addEventListener('click', function() {
-                document.getElementById('add-guest-form').style.display = 'none';
-                document.getElementById('guest-form').reset();
-                document.getElementById('guest-count').value = 1;
-            });
-            
-            // Guest form submission
-            document.getElementById('guest-form').addEventListener('submit', handleAddGuest);
-            
-            // Excel upload
-            document.getElementById('upload-excel')?.addEventListener('click', handleExcelUpload);
-            document.getElementById('download-template')?.addEventListener('click', downloadExcelTemplate);
-            
-            // Print all QR codes
-            document.getElementById('print-all-qr')?.addEventListener('click', printAllQRCodes);
-            
-            // Delete all guests
-            document.getElementById('delete-all-guests')?.addEventListener('click', deleteAllGuests);
-            
-            // Refresh guests
-            document.getElementById('refresh-guests')?.addEventListener('click', function() {
-                loadGuests();
-                loadAttendance();
-            });
-            
-            // Export attendance
-            document.getElementById('export-attendance')?.addEventListener('click', exportAttendanceToExcel);
-            
-            // Scanner controls
-            document.getElementById('toggle-scanner')?.addEventListener('click', toggleScanner);
-            document.getElementById('check-manual-qr')?.addEventListener('click', checkManualQR);
-            
-            // Door controls
-            document.getElementById('quick-open-door')?.addEventListener('click', () => openDoor());
-            document.getElementById('open-door-btn')?.addEventListener('click', () => openDoor());
-            document.getElementById('close-door-btn')?.addEventListener('click', closeDoor);
-            
-            // Light controls
-            document.getElementById('quick-lights-on')?.addEventListener('click', turnOnAllLights);
-            document.getElementById('quick-lights-off')?.addEventListener('click', turnOffAllLights);
-            
-            document.getElementById('light1-on-btn')?.addEventListener('click', () => toggleLight(1, true));
-            document.getElementById('light1-off-btn')?.addEventListener('click', () => toggleLight(1, false));
-            document.getElementById('light2-on-btn')?.addEventListener('click', () => toggleLight(2, true));
-            document.getElementById('light2-off-btn')?.addEventListener('click', () => toggleLight(2, false));
-            
-            // ESP8266 commands
-            document.querySelectorAll('.esp-command').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const command = this.getAttribute('data-command');
-                    sendESPCommand(command);
-                });
-            });
-            
-            // Refresh status
-            document.getElementById('refresh-status')?.addEventListener('click', refreshSystemStatus);
-            
-            // Weather refresh
-            document.getElementById('refresh-weather')?.addEventListener('click', function() {
-                loadAndAnalyzeWeatherData();
-                loadHistoricalData();
-            });
-            
-            // Start recording
-            document.getElementById('start-recording')?.addEventListener('click', function() {
-                toggleRecording();
-            });
-            
-            // View history
-            document.getElementById('view-history')?.addEventListener('click', function() {
-                toggleHistoryTable();
-            });
-            
-            // QR modal
-            document.getElementById('close-qr-modal')?.addEventListener('click', function() {
-                document.getElementById('qr-modal').style.display = 'none';
-            });
-            
-            // Print QR button in modal
-            document.getElementById('print-qr-btn')?.addEventListener('click', function() {
-                const guestName = document.getElementById('qr-modal-guest').textContent;
-                const guestCount = document.getElementById('guest-count-display').textContent;
-                const qrImage = document.querySelector('#qr-modal-image img');
-                const quickCode = document.getElementById('qr-quickcode').textContent;
-                if (qrImage) {
-                    printQRImage(guestName, guestCount, qrImage.src, quickCode);
-                }
-            });
-        }
-        
-        async function handleLogin(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const loginBtnText = document.getElementById('login-btn-text');
-            const loginSpinner = document.getElementById('login-spinner');
-            const loginMessage = document.getElementById('login-message');
-            
-            // Show loading
-            loginBtnText.textContent = 'جاري تسجيل الدخول...';
-            loginSpinner.style.display = 'inline-block';
-            
-            try {
-                // For demo purposes, we'll accept any email/password
-                await window.firebase.signInWithEmailAndPassword(
-                    window.firebase.auth, 
-                    email || 'admin@example.com', 
-                    password || 'password123'
-                );
-                
-                // Success
-                loginMessage.className = 'login-message success';
-                loginMessage.textContent = 'تم تسجيل الدخول بنجاح!';
-                loginMessage.style.display = 'block';
-                
-                // Small delay before redirect
-                setTimeout(() => {
-                    showApp();
-                }, 1000);
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                
-                // For demo, create a user if doesn't exist
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    // Auto-login for demo
-                    setTimeout(() => {
-                        loginMessage.className = 'login-message success';
-                        loginMessage.textContent = 'تم تسجيل الدخول بنجاح (وضع التجربة)!';
-                        loginMessage.style.display = 'block';
+                    <!-- Main Application Script -->
+                    <script>
+                        // Global variables
+                        let currentUser = null;
+                        let guests = [];
+                        let attendance = [];
+                        let scannerActive = false;
+                        let videoStream = null;
+                        let qrScannerInterval = null;
+                        let scannerCooldown = false;
+                        let cooldownTimer = 5;
+                        let cooldownInterval = null;
+                        let weatherHistory = [];
+                        let realTimeInterval = null;
+                        let isRecording = false;
+                        let recordingStartTime = null;
+                        let lastAnalysisTime = 0;
                         
-                        setTimeout(() => {
-                            showApp();
-                        }, 1000);
-                    }, 500);
-                } else {
-                    loginMessage.className = 'login-message error';
-                    loginMessage.textContent = 'خطأ في تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.';
-                    loginMessage.style.display = 'block';
-                    
-                    // Reset button
-                    loginBtnText.textContent = 'تسجيل الدخول';
-                    loginSpinner.style.display = 'none';
-                }
-            }
-        }
-        
-        async function handleLogout() {
-            try {
-                await window.firebase.signOut(window.firebase.auth);
-                showToast('تم تسجيل الخروج بنجاح', 'success');
-            } catch (error) {
-                console.error('Logout error:', error);
-                showToast('حدث خطأ أثناء تسجيل الخروج', 'error');
-            }
-        }
-        
-        async function loadGuests() {
-            try {
-                const guestsRef = window.firebase.collection(window.firebase.db, 'guests');
-                const q = window.firebase.query(guestsRef, window.firebase.orderBy('timestamp', 'desc'));
-                const querySnapshot = await window.firebase.getDocs(q);
-                
-                guests = [];
-                querySnapshot.forEach((doc) => {
-                    guests.push({ id: doc.id, ...doc.data() });
-                });
-                
-                updateGuestStats();
-                renderAllGuests();
-                
-            } catch (error) {
-                console.error('Error loading guests:', error);
-                showToast('حدث خطأ في تحميل بيانات الضيوف', 'error');
-            }
-        }
-        
-        async function loadAttendance() {
-            try {
-                const attendanceRef = window.firebase.collection(window.firebase.db, 'attendance');
-                const q = window.firebase.query(attendanceRef, window.firebase.orderBy('scanTime', 'desc'));
-                const querySnapshot = await window.firebase.getDocs(q);
-                
-                attendance = [];
-                querySnapshot.forEach((doc) => {
-                    attendance.push({ id: doc.id, ...doc.data() });
-                });
-                
-                updateGuestStats();
-                renderRecentGuests();
-                
-            } catch (error) {
-                console.error('Error loading attendance:', error);
-                showToast('حدث خطأ في تحميل بيانات الحضور', 'error');
-            }
-        }
-        
-        function updateGuestStats() {
-            const totalGuests = guests.length;
-            let presentGuestCount = 0;
-            let totalIndividuals = 0;
-            
-            // حساب عدد الضيوف الحاضرين والأفراد
-            const presentGuestsSet = new Set();
-            attendance.forEach(record => {
-                const guest = guests.find(g => g.qrData === record.qrData);
-                if (guest && !presentGuestsSet.has(guest.id)) {
-                    presentGuestsSet.add(guest.id);
-                    presentGuestCount++;
-                    totalIndividuals += (guest.individualCount || 1);
-                }
-            });
-            
-            document.getElementById('total-guests').textContent = `${presentGuestCount}/${totalGuests}`;
-            
-            // تحديث حالة القاعة تلقائياً
-            updateHallStatus(presentGuestCount, totalGuests);
-        }
-        
-        function updateHallStatus(presentGuests, totalGuests) {
-            const hallStatusBadge = document.getElementById('hall-status-badge');
-            const currentGuestsDisplay = document.getElementById('current-guests-display');
-            
-            currentGuestsDisplay.textContent = `الضيوف الحاضرين: ${presentGuests}/${totalGuests}`;
-            
-            // تحديد حالة القاعة بناءً على نسبة الحضور
-            if (totalGuests === 0) {
-                hallStatusBadge.className = 'hall-status-badge hall-status-empty';
-                hallStatusBadge.innerHTML = '<i class="fas fa-users"></i> لا يوجد ضيوف';
-                return 'empty';
-            } else {
-                const occupancyRate = (presentGuests / totalGuests) * 100;
-                
-                if (occupancyRate >= 70) {
-                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
-                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة ممتلئة (${Math.round(occupancyRate)}%)`;
-                    return 'occupied';
-                } else if (occupancyRate >= 30) {
-                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
-                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة متوسطة (${Math.round(occupancyRate)}%)`;
-                    return 'occupied';
-                } else if (presentGuests > 0) {
-                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
-                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة قليلة (${Math.round(occupancyRate)}%)`;
-                    return 'occupied';
-                } else {
-                    hallStatusBadge.className = 'hall-status-badge hall-status-empty';
-                    hallStatusBadge.innerHTML = '<i class="fas fa-users"></i> قاعة فارغة';
-                    return 'empty';
-                }
-            }
-        }
-        
-        function renderRecentGuests() {
-            const tbody = document.getElementById('recent-guests-body');
-            tbody.innerHTML = '';
-            
-            // تجميع بيانات الدخول لكل ضيف
-            const guestAttendanceMap = {};
-            
-            attendance.forEach(record => {
-                const guest = guests.find(g => g.qrData === record.qrData);
-                if (guest) {
-                    if (!guestAttendanceMap[guest.id]) {
-                        guestAttendanceMap[guest.id] = {
-                            guest: guest,
-                            entries: [],
-                            entryCount: 0
-                        };
-                    }
-                    
-                    guestAttendanceMap[guest.id].entries.push(record);
-                    guestAttendanceMap[guest.id].entryCount++;
-                }
-            });
-            
-            // تحويل الـ Map إلى مصفوفة وعرضها
-            Object.values(guestAttendanceMap).forEach(item => {
-                const row = document.createElement('tr');
-                const guest = item.guest;
-                
-                // العثور على آخر وقت دخول
-                let lastEntryTime = 'غير محدد';
-                if (item.entries.length > 0) {
-                    const lastEntry = item.entries[0];
-                    if (lastEntry.scanTime) {
-                        if (lastEntry.scanTime.toDate) {
-                            lastEntryTime = lastEntry.scanTime.toDate().toLocaleString('ar-EG');
-                        } else if (lastEntry.scanTime.seconds) {
-                            lastEntryTime = new Date(lastEntry.scanTime.seconds * 1000).toLocaleString('ar-EG');
-                        }
-                    }
-                }
-                
-                row.innerHTML = `
-                    <td>${guest.name || 'بدون اسم'}</td>
-                    <td>${guest.individualCount || 1}</td>
-                    <td>
-                        <span class="badge" style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 20px; font-weight: bold;">
-                            ${item.entryCount}
-                        </span>
-                    </td>
-                    <td>${lastEntryTime}</td>
-                    <td>
-                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
-                            <i class="fas fa-qrcode"></i> عرض QR
-                        </button>
-                        <button class="btn btn-danger btn-sm delete-guest-attendance" data-id="${guest.id}">
-                            <i class="fas fa-trash"></i> حذف
-                        </button>
-                    </td>
-                `;
-                
-                tbody.appendChild(row);
-            });
-            
-            // إضافة مستمعي الأحداث للأزرار الجديدة
-            tbody.querySelectorAll('.view-qr').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const guestId = this.getAttribute('data-id');
-                    if (guestId) {
-                        showQRModal(guestId);
-                    }
-                });
-            });
-            
-            tbody.querySelectorAll('.delete-guest-attendance').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const guestId = this.getAttribute('data-id');
-                    deleteAllGuestAttendance(guestId);
-                });
-            });
-        }
-        
-        function renderAllGuests() {
-            const tbody = document.getElementById('all-guests-body');
-            tbody.innerHTML = '';
-            
-            guests.forEach((guest, index) => {
-                const row = document.createElement('tr');
-                
-                const date = guest.timestamp ? 
-                    (guest.timestamp.toDate ? 
-                        guest.timestamp.toDate().toLocaleDateString('ar-EG') : 
-                        new Date(guest.timestamp.seconds * 1000).toLocaleDateString('ar-EG')) : 
-                    'غير محدد';
-                
-                // حساب عدد مرات دخول هذا الضيف
-                const guestEntries = attendance.filter(a => a.qrData === guest.qrData);
-                const entryCount = guestEntries.length;
-                
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${guest.name || 'بدون اسم'}</td>
-                    <td>${guest.individualCount || 1}</td>
-                    <td>
-                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
-                            <i class="fas fa-qrcode"></i> عرض QR
-                        </button>
-                    </td>
-                    <td>${guest.quickCode || '--'}</td>
-                    <td>
-                        <span style="color: ${entryCount > 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">
-                            ${entryCount > 0 ? 'حاضر' : 'غائب'}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge" style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 20px; font-weight: bold;">
-                            ${entryCount}
-                        </span>
-                    </td>
-                    <td>${date}</td>
-                    <td>
-                        <button class="btn btn-outline btn-sm delete-guest" data-id="${guest.id}">
-                            <i class="fas fa-trash"></i> حذف
-                        </button>
-                    </td>
-                `;
-                
-                tbody.appendChild(row);
-            });
-            
-            // إضافة مستمعي الأحداث للأزرار
-            tbody.querySelectorAll('.view-qr').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const guestId = this.getAttribute('data-id');
-                    showQRModal(guestId);
-                });
-            });
-            
-            tbody.querySelectorAll('.delete-guest').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const guestId = this.getAttribute('data-id');
-                    deleteGuest(guestId);
-                });
-            });
-        }
-        
-        async function handleAddGuest(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('guest-name').value.trim();
-            const individualCount = parseInt(document.getElementById('guest-count').value) || 1;
-            
-            if (!name) {
-                showToast('يرجى إدخال اسم الضيف', 'warning');
-                document.getElementById('guest-name').focus();
-                return;
-            }
-            
-            if (individualCount < 1) {
-                showToast('عدد الأفراد يجب أن يكون 1 على الأقل', 'warning');
-                document.getElementById('guest-count').focus();
-                return;
-            }
-            
-            try {
-                // توليد معرف فريد لـ QR
-                const qrData = `SMART_HALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                
-                // توليد رمز سريع مكون من 6 أرقام
-                const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
-                
-                // عرض حالة التحميل
-                const submitBtn = document.querySelector('#guest-form button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإنشاء...';
-                submitBtn.disabled = true;
-                
-                // توليد صورة QR مع الرمز السريع وعدد الأفراد
-                const qrImageUrl = await generateQRCodeWithDetails(qrData, name, quickCode, individualCount);
-                
-                // حفظ في Firestore
-                const guestData = {
-                    name,
-                    individualCount,
-                    qrData,
-                    quickCode,
-                    qrImageUrl,
-                    timestamp: window.firebase.serverTimestamp()
-                };
-                
-                const docRef = await window.firebase.addDoc(
-                    window.firebase.collection(window.firebase.db, 'guests'),
-                    guestData
-                );
-                
-                // نجاح
-                showToast(`تم إضافة الضيف "${name}" (${individualCount} أفراد) بنجاح - الرمز السريع: ${quickCode}`, 'success');
-                document.getElementById('guest-form').reset();
-                document.getElementById('guest-count').value = 1;
-                document.getElementById('add-guest-form').style.display = 'none';
-                
-                // إعادة تحميل الضيوف
-                loadGuests();
-                
-            } catch (error) {
-                console.error('Error adding guest:', error);
-                showToast(`حدث خطأ في إضافة الضيف: ${error.message}`, 'error');
-            } finally {
-                // استعادة حالة الزر
-                const submitBtn = document.querySelector('#guest-form button[type="submit"]');
-                submitBtn.innerHTML = '<i class="fas fa-qrcode"></i> إنشاء QR وحفظ';
-                submitBtn.disabled = false;
-            }
-        }
-        
-        function generateQRCodeWithDetails(qrData, name, quickCode, individualCount) {
-            return new Promise((resolve, reject) => {
-                try {
-                    // إنشاء عنصر canvas
-                    const canvas = document.createElement('canvas');
-                    const size = 400;
-                    
-                    // تحديد حجم canvas
-                    canvas.width = size;
-                    canvas.height = size + 100; // مساحة إضافية للمعلومات
-                    
-                    const ctx = canvas.getContext('2d');
-                    
-                    // تعيين الخلفية
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    // توليد QR code على canvas مؤقت
-                    const qrCanvas = document.createElement('canvas');
-                    
-                    QRCode.toCanvas(qrCanvas, qrData, {
-                        width: 300,
-                        margin: 2,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
-                        }
-                    }, function(error) {
-                        if (error) {
-                            reject(error);
-                        } else {
-                            // رسم QR code على canvas الرئيسي
-                            const qrX = (canvas.width - 300) / 2;
-                            const qrY = 50;
-                            ctx.drawImage(qrCanvas, qrX, qrY);
+                        // Initialize the application when DOM is loaded
+                        document.addEventListener('DOMContentLoaded', function() {
+                            initializeApp();
+                        });
+                        
+                        function initializeApp() {
+                            // Check authentication state
+                            window.firebase.onAuthStateChanged(window.firebase.auth, (user) => {
+                                if (user) {
+                                    // User is signed in
+                                    currentUser = user;
+                                    showApp();
+                                    updateUserInfo();
+                                    loadGuests();
+                                    loadAttendance();
+                                    setupRealtimeListeners();
+                                    updateTime();
+                                    setInterval(updateTime, 1000);
+                                    
+                                    // بدء التحديث التلقائي كل 2 ثانية
+                                    startRealTimeUpdates();
+                                    
+                                    // تحميل وتحليل بيانات الطقس
+                                    loadAndAnalyzeWeatherData();
+                                    
+                                    // تحميل البيانات التاريخية
+                                    loadHistoricalData();
+                                    
+                                } else {
+                                    // User is signed out
+                                    showLogin();
+                                }
+                            });
                             
-                            // إضافة اسم الضيف فوق QR code
-                            ctx.font = 'bold 22px Arial';
-                            ctx.fillStyle = '#000000';
-                            ctx.textAlign = 'center';
-                            ctx.fillText(name, canvas.width / 2, 35);
-                            
-                            // إضافة عدد الأفراد تحت الاسم
-                            ctx.font = 'bold 18px Arial';
-                            ctx.fillStyle = '#4361ee';
-                            ctx.fillText(`عدد الأفراد: ${individualCount}`, canvas.width / 2, 75);
-                            
-                            // إضافة الرمز السريع تحت QR code
-                            ctx.font = 'bold 24px Arial';
-                            ctx.fillStyle = '#f72585'; // لون مختلف
-                            ctx.fillText(`الرمز السريع: ${quickCode}`, canvas.width / 2, qrY + 330);
-                            
-                            // إضافة تعليمات صغيرة
-                            ctx.font = '14px Arial';
-                            ctx.fillStyle = '#666666';
-                            ctx.fillText('يمكن إدخال هذا الرقم يدوياً', canvas.width / 2, qrY + 360);
-                            
-                            // تحويل canvas إلى data URL
-                            const dataUrl = canvas.toDataURL('image/png');
-                            resolve(dataUrl);
+                            // Setup event listeners
+                            setupEventListeners();
                         }
-                    });
-                } catch (error) {
-                    // استخدام رابط بديل إذا فشل توليد QR
-                    console.warn('QR generation failed, using fallback:', error);
-                    resolve(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}&qzone=2&format=png`);
-                }
-            });
-        }
-        
-        function showQRModal(guestId) {
-            const guest = guests.find(g => g.id === guestId);
-            if (!guest) return;
-            
-            const modal = document.getElementById('qr-modal');
-            const title = document.getElementById('qr-modal-title');
-            const imageContainer = document.getElementById('qr-modal-image');
-            const guestName = document.getElementById('qr-modal-guest');
-            const guestCountDisplay = document.getElementById('guest-count-display');
-            const quickCodeContainer = document.getElementById('qr-quickcode');
-            
-            title.textContent = `QR Code - ${guest.name}`;
-            guestName.textContent = guest.name;
-            guestCountDisplay.textContent = guest.individualCount || 1;
-            
-            // عرض الرمز السريع
-            if (guest.quickCode) {
-                quickCodeContainer.innerHTML = `
-                    <div style="text-align: center;">
-                        <p style="font-size: 16px; margin-bottom: 5px;">الرمز السريع:</p>
-                        <p style="font-size: 28px; font-weight: bold; color: #f72585; letter-spacing: 3px; background: #f5f5f5; padding: 10px; border-radius: 5px;">
-                            ${guest.quickCode}
-                        </p>
-                        <p style="font-size: 14px; color: #666; margin-top: 5px;">يمكن إدخال هذا الرقم يدوياً</p>
-                    </div>
-                `;
-            } else {
-                quickCodeContainer.innerHTML = '<p style="color: #999;">لا يوجد رمز سريع</p>';
-            }
-            
-            // مسح الصورة السابقة
-            imageContainer.innerHTML = '';
-            
-            // إنشاء وإضافة الصورة
-            const img = document.createElement('img');
-            img.src = guest.qrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(guest.qrData || guest.id)}`;
-            img.alt = `QR Code لـ ${guest.name}`;
-            img.style.width = '100%';
-            img.style.maxWidth = '400px';
-            img.style.borderRadius = '8px';
-            
-            imageContainer.appendChild(img);
-            
-            // عرض النافذة المنبثقة
-            modal.style.display = 'flex';
-        }
-        
-        function printQRImage(guestName, guestCount, qrImageUrl, quickCode) {
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>طباعة QR - ${guestName}</title>
-                    <style>
-                        body { 
-                            font-family: Arial, sans-serif; 
-                            text-align: center; 
-                            padding: 20px; 
-                            margin: 0;
-                        }
-                        .container {
-                            max-width: 400px;
-                            margin: 0 auto;
-                            padding: 20px;
-                            border: 1px solid #ddd;
-                            border-radius: 10px;
-                        }
-                        h2 { color: #333; margin-bottom: 10px; }
-                        h3 { color: #666; margin-bottom: 20px; }
-                        img { 
-                            max-width: 100%; 
-                            height: auto; 
-                            margin: 20px 0; 
-                            border: 1px solid #eee;
-                        }
-                        .guest-info {
-                            background-color: #f9f9f9;
-                            padding: 15px;
-                            border-radius: 8px;
-                            margin: 15px 0;
-                        }
-                        .quick-code {
-                            font-family: monospace;
-                            font-size: 28px;
-                            font-weight: bold;
-                            letter-spacing: 5px;
-                            color: #f72585;
-                            background: #f5f5f5;
-                            padding: 15px;
-                            border-radius: 5px;
-                            margin: 20px 0;
-                            direction: ltr;
-                            text-align: center;
-                        }
-                        .code-label {
-                            font-size: 16px;
-                            color: #666;
-                            margin-bottom: 10px;
-                        }
-                        .info { 
-                            margin: 20px 0; 
-                            padding: 10px;
-                            background-color: #f9f9f9;
-                            border-radius: 5px;
-                        }
-                        @media print {
-                            button { display: none; }
-                            .container { border: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <h2>Smart Banquet Hall</h2>
-                        <h3>بطاقة ضيف</h3>
-                        <div class="guest-info">
-                            <p style="font-size: 1.4rem; font-weight: bold; margin-bottom: 10px;">${guestName}</p>
-                            <p style="color: #4361ee; font-weight: bold;">عدد الأفراد: ${guestCount}</p>
-                        </div>
-                        <div class="info">
-                            <p>يرجى عرض هذا الرمز عند المدخل</p>
-                        </div>
-                        <img src="${qrImageUrl}" alt="QR Code">
-                        ${quickCode ? `
-                        <div class="code-label">الرمز السريع:</div>
-                        <div class="quick-code">${quickCode}</div>
-                        <div class="info">
-                            <p>يمكن إدخال هذا الرقم يدوياً في حالة عدم إمكانية مسح QR</p>
-                        </div>
-                        ` : ''}
-                        <div class="info">
-                            <p>نظام القاعة الذكية © 2024</p>
-                        </div>
-                        <br>
-                        <button onclick="window.print()" style="padding: 10px 20px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer;">طباعة</button>
-                        <button onclick="window.close()" style="padding: 10px 20px; background: #f72585; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">إغلاق</button>
-                    </div>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-        }
-        
-        function printAllQRCodes() {
-            if (guests.length === 0) {
-                showToast('لا يوجد ضيوف لطباعة QR خاصتهم', 'warning');
-                return;
-            }
-            
-            const printWindow = window.open('', '_blank');
-            let content = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>طباعة جميع رموز QR</title>
-                    <style>
-                        body { 
-                            font-family: Arial, sans-serif; 
-                            padding: 20px; 
-                            margin: 0;
-                        }
-                        .header {
-                            text-align: center;
-                            margin-bottom: 30px;
-                        }
-                        h2 { color: #333; }
-                        .qr-grid { 
-                            display: grid; 
-                            grid-template-columns: repeat(3, 1fr); 
-                            gap: 20px; 
-                        }
-                        .qr-card { 
-                            text-align: center; 
-                            border: 1px solid #ddd; 
-                            padding: 15px; 
-                            border-radius: 10px;
-                            page-break-inside: avoid;
-                        }
-                        .qr-card h4 { 
-                            margin: 10px 0; 
-                            font-size: 16px;
-                            height: 40px;
-                            overflow: hidden;
-                        }
-                        .guest-count {
-                            color: #4361ee;
-                            font-weight: bold;
-                            margin: 5px 0;
-                        }
-                        .quick-code {
-                            font-family: monospace;
-                            font-size: 18px;
-                            font-weight: bold;
-                            color: #f72585;
-                            background: #f5f5f5;
-                            padding: 8px;
-                            border-radius: 3px;
-                            margin: 10px 0;
-                            direction: ltr;
-                            text-align: center;
-                        }
-                        img { 
-                            max-width: 100%; 
-                            height: auto;
-                            max-height: 150px;
-                        }
-                        @media print {
-                            .qr-grid { grid-template-columns: repeat(2, 1fr); }
-                            button { display: none; }
-                            .header { margin-bottom: 20px; }
-                        }
-                        @media screen {
-                            .controls {
-                                text-align: center;
-                                margin-top: 30px;
-                                padding-top: 20px;
-                                border-top: 1px solid #ddd;
+                        
+                        function startRealTimeUpdates() {
+                            // إيقاف أي فاصل زمني سابق
+                            if (realTimeInterval) {
+                                clearInterval(realTimeInterval);
                             }
-                            button {
-                                padding: 10px 20px;
-                                background: #4361ee;
-                                color: white;
-                                border: none;
-                                border-radius: 5px;
-                                cursor: pointer;
-                                margin: 0 5px;
+                            
+                            // بدء التحديث التلقائي كل 2 ثانية
+                            realTimeInterval = setInterval(() => {
+                                // تحديث التحليل كل 2 ثانية فقط إذا كان قسم الطقس نشطاً
+                                if (document.getElementById('weather').classList.contains('active')) {
+                                    const now = Date.now();
+                                    if (now - lastAnalysisTime > 2000) { // تحديث كل 2 ثانية
+                                        lastAnalysisTime = now;
+                                        updateRealTimeAnalysis();
+                                    }
+                                }
+                            }, 2000); // 2000 مللي ثانية = 2 ثانية
+                        }
+                        
+                        function showToast(message, type = 'info') {
+                            const toast = document.getElementById('toast');
+                            const toastMessage = document.getElementById('toast-message');
+                            const toastIcon = toast.querySelector('i');
+                            
+                            toastMessage.textContent = message;
+                            
+                            // Set icon and color based on type
+                            switch(type) {
+                                case 'success':
+                                    toast.className = 'toast success show';
+                                    toastIcon.className = 'fas fa-check-circle';
+                                    break;
+                                case 'error':
+                                    toast.className = 'toast error show';
+                                    toastIcon.className = 'fas fa-exclamation-circle';
+                                    break;
+                                case 'warning':
+                                    toast.className = 'toast warning show';
+                                    toastIcon.className = 'fas fa-exclamation-triangle';
+                                    break;
+                                case 'info':
+                                    toast.className = 'toast info show';
+                                    toastIcon.className = 'fas fa-info-circle';
+                                    break;
+                                default:
+                                    toast.className = 'toast show';
+                                    toastIcon.className = 'fas fa-info-circle';
                             }
-                            button.close {
-                                background: #f72585;
+                            
+                            // Auto hide after 3 seconds
+                            setTimeout(() => {
+                                toast.classList.remove('show');
+                            }, 3000);
+                        }
+                        
+                        function showLogin() {
+                            document.getElementById('login-page').style.display = 'flex';
+                            document.getElementById('app-container').style.display = 'none';
+                        }
+                        
+                        function showApp() {
+                            document.getElementById('login-page').style.display = 'none';
+                            document.getElementById('app-container').style.display = 'block';
+                        }
+                        
+                        function updateUserInfo() {
+                            if (currentUser) {
+                                const avatar = document.getElementById('user-avatar');
+                                const email = currentUser.email;
+                                avatar.textContent = email.charAt(0).toUpperCase();
                             }
                         }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h2>Smart Banquet Hall - جميع رموز QR للضيوف</h2>
-                        <p>عدد الضيوف: ${guests.length}</p>
-                        <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
-                    </div>
-                    <div class="qr-grid">
-            `;
-            
-            guests.forEach(guest => {
-                const qrUrl = guest.qrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(guest.qrData || guest.id)}`;
-                content += `
-                    <div class="qr-card">
-                        <h4>${guest.name}</h4>
-                        <div class="guest-count">عدد الأفراد: ${guest.individualCount || 1}</div>
-                        <img src="${qrUrl}" alt="QR Code">
-                        <div class="quick-code">${guest.quickCode || '--'}</div>
-                    </div>
-                `;
-            });
-            
-            content += `
-                    </div>
-                    <div class="controls">
-                        <button onclick="window.print()">طباعة</button>
-                        <button onclick="window.close()" class="close">إغلاق</button>
-                    </div>
-                </body>
-                </html>
-            `;
-            
-            printWindow.document.write(content);
-            printWindow.document.close();
-        }
-        
-        async function deleteGuest(guestId) {
-            if (!confirm('هل أنت متأكد من حذف هذا الضيف؟')) return;
-            
-            try {
-                await window.firebase.deleteDoc(
-                    window.firebase.doc(window.firebase.db, 'guests', guestId)
-                );
-                
-                showToast('تم حذف الضيف بنجاح', 'success');
-                loadGuests();
-                loadAttendance();
-            } catch (error) {
-                console.error('Error deleting guest:', error);
-                showToast('حدث خطأ في حذف الضيف', 'error');
-            }
-        }
-        
-        async function deleteAllGuestAttendance(guestId) {
-            const guest = guests.find(g => g.id === guestId);
-            if (!guest) return;
-            
-            if (!confirm(`هل أنت متأكد من حذف جميع سجلات دخول ${guest.name}؟`)) return;
-            
-            try {
-                // العثور على جميع سجلات الحضور لهذا الضيف
-                const guestAttendance = attendance.filter(a => a.qrData === guest.qrData);
-                
-                const deletePromises = guestAttendance.map(record =>
-                    window.firebase.deleteDoc(
-                        window.firebase.doc(window.firebase.db, 'attendance', record.id)
-                    )
-                );
-                
-                await Promise.all(deletePromises);
-                
-                showToast(`تم حذف جميع سجلات دخول ${guest.name}`, 'success');
-                loadAttendance();
-            } catch (error) {
-                console.error('Error deleting guest attendance:', error);
-                showToast('حدث خطأ في حذف سجلات الدخول', 'error');
-            }
-        }
-        
-        async function deleteAllGuests() {
-            if (guests.length === 0) {
-                showToast('لا يوجد ضيوف لحذفهم', 'warning');
-                return;
-            }
-            
-            if (!confirm(`هل أنت متأكد من حذف جميع الضيوف (${guests.length})؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
-                return;
-            }
-            
-            try {
-                const deletePromises = guests.map(guest => 
-                    window.firebase.deleteDoc(
-                        window.firebase.doc(window.firebase.db, 'guests', guest.id)
-                    )
-                );
-                
-                await Promise.all(deletePromises);
-                
-                // Also delete attendance records
-                const attendanceDeletePromises = attendance.map(record =>
-                    window.firebase.deleteDoc(
-                        window.firebase.doc(window.firebase.db, 'attendance', record.id)
-                    )
-                );
-                
-                await Promise.all(attendanceDeletePromises);
-                
-                showToast('تم حذف جميع الضيوف وسجلات الحضور بنجاح', 'success');
-                loadGuests();
-                loadAttendance();
-            } catch (error) {
-                console.error('Error deleting all guests:', error);
-                showToast('حدث خطأ في حذف الضيوف', 'error');
-            }
-        }
-        
-        function handleExcelUpload() {
-            const fileInput = document.getElementById('excel-file');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                showToast('يرجى اختيار ملف Excel أولاً', 'warning');
-                return;
-            }
-            
-            const progressDiv = document.getElementById('excel-progress');
-            const progressBar = document.getElementById('excel-progress-bar');
-            const progressText = document.getElementById('excel-progress-text');
-            
-            progressDiv.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressText.textContent = '0%';
-            
-            const reader = new FileReader();
-            
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    // الحصول على أول ورقة
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    
-                    // التحويل إلى JSON
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    // استخراج أسماء الضيوف (العمود الأول) وعدد الأفراد (العمود الثاني)
-                    const guestRows = jsonData.filter(row => row && row.length > 0 && row[0]);
-                    
-                    if (guestRows.length === 0) {
-                        showToast('لا توجد بيانات في الملف', 'warning');
-                        progressDiv.style.display = 'none';
-                        return;
-                    }
-                    
-                    // تخطي العنوان إذا كان موجوداً
-                    const startRow = (guestRows[0][0].toString().toLowerCase().includes('اسم') || 
-                                     guestRows[0][0].toString().toLowerCase().includes('name')) ? 1 : 0;
-                    
-                    const guestList = [];
-                    for (let i = startRow; i < guestRows.length; i++) {
-                        const name = guestRows[i][0] ? guestRows[i][0].toString().trim() : '';
-                        if (name) {
-                            const individualCount = guestRows[i][1] ? 
-                                parseInt(guestRows[i][1].toString().trim()) || 1 : 1;
+                        
+                        function updateTime() {
+                            const now = new Date();
+                            const timeString = now.toLocaleTimeString('ar-EG');
+                            const dateString = now.toLocaleDateString('ar-EG', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
                             
-                            guestList.push({
-                                name: name,
-                                individualCount: Math.max(1, Math.min(individualCount, 20)) // تقييد بين 1 و 20
+                            const timeElement = document.getElementById('current-time');
+                            if (timeElement) {
+                                timeElement.textContent = `الوقت: ${timeString}`;
+                                timeElement.title = dateString;
+                            }
+                        }
+                        
+                        function setupEventListeners() {
+                            // Login form
+                            document.getElementById('login-form').addEventListener('submit', handleLogin);
+                            
+                            // Logout button
+                            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+                            
+                            // Navigation tabs
+                            document.querySelectorAll('.nav-tabs a').forEach(tab => {
+                                tab.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    
+                                    // Update active tab
+                                    document.querySelectorAll('.nav-tabs a').forEach(t => t.classList.remove('active'));
+                                    this.classList.add('active');
+                                    
+                                    // Show corresponding section
+                                    const sectionId = this.getAttribute('data-section');
+                                    document.querySelectorAll('.content-section').forEach(section => {
+                                        section.classList.remove('active');
+                                    });
+                                    document.getElementById(sectionId).classList.add('active');
+                                    
+                                    // Special handling for scanner section
+                                    if (sectionId === 'scanner') {
+                                        // Stop scanner if it's active
+                                        if (scannerActive) {
+                                            toggleScanner();
+                                        }
+                                    }
+                                    
+                                    // Refresh weather analysis when switching to weather section
+                                    if (sectionId === 'weather') {
+                                        setTimeout(() => {
+                                            loadAndAnalyzeWeatherData();
+                                        }, 300);
+                                    }
+                                });
+                            });
+                            
+                            // Quick navigation from dashboard
+                            document.getElementById('quick-add-guest')?.addEventListener('click', function() {
+                                // Switch to guests section and show form
+                                document.querySelector('.nav-tabs a[data-section="guests"]').click();
+                                setTimeout(() => {
+                                    document.getElementById('add-guest-form').style.display = 'block';
+                                    document.getElementById('guest-name').focus();
+                                }, 100);
+                            });
+                            
+                            document.getElementById('quick-scan')?.addEventListener('click', function() {
+                                document.querySelector('.nav-tabs a[data-section="scanner"]').click();
+                                setTimeout(() => {
+                                    document.getElementById('toggle-scanner').click();
+                                }, 100);
+                            });
+                            
+                            // Guest management
+                            document.getElementById('add-guest-btn')?.addEventListener('click', function() {
+                                document.getElementById('add-guest-form').style.display = 'block';
+                                document.getElementById('guest-name').focus();
+                            });
+                            
+                            document.getElementById('close-form')?.addEventListener('click', function() {
+                                document.getElementById('add-guest-form').style.display = 'none';
+                                document.getElementById('guest-form').reset();
+                                document.getElementById('guest-count').value = 1;
+                            });
+                            
+                            document.getElementById('cancel-form')?.addEventListener('click', function() {
+                                document.getElementById('add-guest-form').style.display = 'none';
+                                document.getElementById('guest-form').reset();
+                                document.getElementById('guest-count').value = 1;
+                            });
+                            
+                            // Guest form submission
+                            document.getElementById('guest-form').addEventListener('submit', handleAddGuest);
+                            
+                            // Excel upload
+                            document.getElementById('upload-excel')?.addEventListener('click', handleExcelUpload);
+                            document.getElementById('download-template')?.addEventListener('click', downloadExcelTemplate);
+                            
+                            // Print all QR codes
+                            document.getElementById('print-all-qr')?.addEventListener('click', printAllQRCodes);
+                            
+                            // Delete all guests
+                            document.getElementById('delete-all-guests')?.addEventListener('click', deleteAllGuests);
+                            
+                            // Refresh guests
+                            document.getElementById('refresh-guests')?.addEventListener('click', function() {
+                                loadGuests();
+                                loadAttendance();
+                            });
+                            
+                            // Export attendance
+                            document.getElementById('export-attendance')?.addEventListener('click', exportAttendanceToExcel);
+                            
+                            // Scanner controls
+                            document.getElementById('toggle-scanner')?.addEventListener('click', toggleScanner);
+                            document.getElementById('check-manual-qr')?.addEventListener('click', checkManualQR);
+                            
+                            // Door controls
+                            document.getElementById('quick-open-door')?.addEventListener('click', () => openDoor());
+                            document.getElementById('open-door-btn')?.addEventListener('click', () => openDoor());
+                            document.getElementById('close-door-btn')?.addEventListener('click', closeDoor);
+                            
+                            // Light controls
+                            document.getElementById('quick-lights-on')?.addEventListener('click', turnOnAllLights);
+                            document.getElementById('quick-lights-off')?.addEventListener('click', turnOffAllLights);
+                            
+                            document.getElementById('light1-on-btn')?.addEventListener('click', () => toggleLight(1, true));
+                            document.getElementById('light1-off-btn')?.addEventListener('click', () => toggleLight(1, false));
+                            document.getElementById('light2-on-btn')?.addEventListener('click', () => toggleLight(2, true));
+                            document.getElementById('light2-off-btn')?.addEventListener('click', () => toggleLight(2, false));
+                            
+                            // ESP8266 commands
+                            document.querySelectorAll('.esp-command').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const command = this.getAttribute('data-command');
+                                    sendESPCommand(command);
+                                });
+                            });
+                            
+                            // Refresh status
+                            document.getElementById('refresh-status')?.addEventListener('click', refreshSystemStatus);
+                            
+                            // Weather refresh
+                            document.getElementById('refresh-weather')?.addEventListener('click', function() {
+                                loadAndAnalyzeWeatherData();
+                                loadHistoricalData();
+                            });
+                            
+                            // Start recording
+                            document.getElementById('start-recording')?.addEventListener('click', function() {
+                                toggleRecording();
+                            });
+                            
+                            // View history
+                            document.getElementById('view-history')?.addEventListener('click', function() {
+                                toggleHistoryTable();
+                            });
+                            
+                            // QR modal
+                            document.getElementById('close-qr-modal')?.addEventListener('click', function() {
+                                document.getElementById('qr-modal').style.display = 'none';
+                            });
+                            
+                            // Print QR button in modal
+                            document.getElementById('print-qr-btn')?.addEventListener('click', function() {
+                                const guestName = document.getElementById('qr-modal-guest').textContent;
+                                const guestCount = document.getElementById('guest-count-display').textContent;
+                                const qrImage = document.querySelector('#qr-modal-image img');
+                                const quickCode = document.getElementById('qr-quickcode').textContent;
+                                if (qrImage) {
+                                    printQRImage(guestName, guestCount, qrImage.src, quickCode);
+                                }
                             });
                         }
-                    }
-                    
-                    if (guestList.length === 0) {
-                        showToast('لا توجد أسماء ضيوف في الملف', 'warning');
-                        progressDiv.style.display = 'none';
-                        return;
-                    }
-                    
-                    let successCount = 0;
-                    let errorCount = 0;
-                    
-                    for (let i = 0; i < guestList.length; i++) {
-                        const guest = guestList[i];
                         
-                        // تحديث التقدم
-                        const progress = Math.round(((i + 1) / guestList.length) * 100);
-                        progressBar.style.width = `${progress}%`;
-                        progressText.textContent = `${progress}% (${i + 1}/${guestList.length})`;
+                        async function handleLogin(e) {
+                            e.preventDefault();
+                            
+                            const email = document.getElementById('login-email').value;
+                            const password = document.getElementById('login-password').value;
+                            const loginBtnText = document.getElementById('login-btn-text');
+                            const loginSpinner = document.getElementById('login-spinner');
+                            const loginMessage = document.getElementById('login-message');
+                            
+                            // Show loading
+                            loginBtnText.textContent = 'جاري تسجيل الدخول...';
+                            loginSpinner.style.display = 'inline-block';
+                            
+                            try {
+                                // For demo purposes, we'll accept any email/password
+                                await window.firebase.signInWithEmailAndPassword(
+                                    window.firebase.auth, 
+                                    email || 'admin@example.com', 
+                                    password || 'password123'
+                                );
+                                
+                                // Success
+                                loginMessage.className = 'login-message success';
+                                loginMessage.textContent = 'تم تسجيل الدخول بنجاح!';
+                                loginMessage.style.display = 'block';
+                                
+                                // Small delay before redirect
+                                setTimeout(() => {
+                                    showApp();
+                                }, 1000);
+                                
+                            } catch (error) {
+                                console.error('Login error:', error);
+                                
+                                // For demo, create a user if doesn't exist
+                                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                                    // Auto-login for demo
+                                    setTimeout(() => {
+                                        loginMessage.className = 'login-message success';
+                                        loginMessage.textContent = 'تم تسجيل الدخول بنجاح (وضع التجربة)!';
+                                        loginMessage.style.display = 'block';
+                                        
+                                        setTimeout(() => {
+                                            showApp();
+                                        }, 1000);
+                                    }, 500);
+                                } else {
+                                    loginMessage.className = 'login-message error';
+                                    loginMessage.textContent = 'خطأ في تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.';
+                                    loginMessage.style.display = 'block';
+                                    
+                                    // Reset button
+                                    loginBtnText.textContent = 'تسجيل الدخول';
+                                    loginSpinner.style.display = 'none';
+                                }
+                            }
+                        }
                         
-                        try {
-                            // توليد معرف فريد لـ QR
-                            const qrData = `SMART_HALL_EXCEL_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
+                        async function handleLogout() {
+                            try {
+                                await window.firebase.signOut(window.firebase.auth);
+                                showToast('تم تسجيل الخروج بنجاح', 'success');
+                            } catch (error) {
+                                console.error('Logout error:', error);
+                                showToast('حدث خطأ أثناء تسجيل الخروج', 'error');
+                            }
+                        }
+                        
+                        async function loadGuests() {
+                            try {
+                                const guestsRef = window.firebase.collection(window.firebase.db, 'guests');
+                                const q = window.firebase.query(guestsRef, window.firebase.orderBy('timestamp', 'desc'));
+                                const querySnapshot = await window.firebase.getDocs(q);
+                                
+                                guests = [];
+                                querySnapshot.forEach((doc) => {
+                                    guests.push({ id: doc.id, ...doc.data() });
+                                });
+                                
+                                updateGuestStats();
+                                renderAllGuests();
+                                
+                            } catch (error) {
+                                console.error('Error loading guests:', error);
+                                showToast('حدث خطأ في تحميل بيانات الضيوف', 'error');
+                            }
+                        }
+                        
+                        async function loadAttendance() {
+                            try {
+                                const attendanceRef = window.firebase.collection(window.firebase.db, 'attendance');
+                                const q = window.firebase.query(attendanceRef, window.firebase.orderBy('scanTime', 'desc'));
+                                const querySnapshot = await window.firebase.getDocs(q);
+                                
+                                attendance = [];
+                                querySnapshot.forEach((doc) => {
+                                    attendance.push({ id: doc.id, ...doc.data() });
+                                });
+                                
+                                updateGuestStats();
+                                renderRecentGuests();
+                                
+                            } catch (error) {
+                                console.error('Error loading attendance:', error);
+                                showToast('حدث خطأ في تحميل بيانات الحضور', 'error');
+                            }
+                        }
+                        
+                        function updateGuestStats() {
+                            const totalGuests = guests.length;
+                            let presentGuestCount = 0;
+                            let totalIndividuals = 0;
                             
-                            // توليد رمز سريع مكون من 6 أرقام
-                            const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
+                            // حساب عدد الضيوف الحاضرين والأفراد
+                            const presentGuestsSet = new Set();
+                            attendance.forEach(record => {
+                                const guest = guests.find(g => g.qrData === record.qrData);
+                                if (guest && !presentGuestsSet.has(guest.id)) {
+                                    presentGuestsSet.add(guest.id);
+                                    presentGuestCount++;
+                                    totalIndividuals += (guest.individualCount || 1);
+                                }
+                            });
                             
-                            // توليد صورة QR مع التفاصيل
-                            const qrImageUrl = await generateQRCodeWithDetails(qrData, guest.name, quickCode, guest.individualCount);
+                            document.getElementById('total-guests').textContent = `${presentGuestCount}/${totalGuests}`;
                             
-                            // حفظ في Firestore
-                            const guestData = {
-                                name: guest.name,
-                                individualCount: guest.individualCount,
-                                qrData,
-                                quickCode,
-                                qrImageUrl,
-                                timestamp: window.firebase.serverTimestamp()
+                            // تحديث حالة القاعة تلقائياً
+                            updateHallStatus(presentGuestCount, totalGuests);
+                        }
+                        
+                        function updateHallStatus(presentGuests, totalGuests) {
+                            const hallStatusBadge = document.getElementById('hall-status-badge');
+                            const currentGuestsDisplay = document.getElementById('current-guests-display');
+                            
+                            currentGuestsDisplay.textContent = `الضيوف الحاضرين: ${presentGuests}/${totalGuests}`;
+                            
+                            // تحديد حالة القاعة بناءً على نسبة الحضور
+                            if (totalGuests === 0) {
+                                hallStatusBadge.className = 'hall-status-badge hall-status-empty';
+                                hallStatusBadge.innerHTML = '<i class="fas fa-users"></i> لا يوجد ضيوف';
+                                return 'empty';
+                            } else {
+                                const occupancyRate = (presentGuests / totalGuests) * 100;
+                                
+                                if (occupancyRate >= 70) {
+                                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
+                                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة ممتلئة (${Math.round(occupancyRate)}%)`;
+                                    return 'occupied';
+                                } else if (occupancyRate >= 30) {
+                                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
+                                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة متوسطة (${Math.round(occupancyRate)}%)`;
+                                    return 'occupied';
+                                } else if (presentGuests > 0) {
+                                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
+                                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة قليلة (${Math.round(occupancyRate)}%)`;
+                                    return 'occupied';
+                                } else {
+                                    hallStatusBadge.className = 'hall-status-badge hall-status-empty';
+                                    hallStatusBadge.innerHTML = '<i class="fas fa-users"></i> قاعة فارغة';
+                                    return 'empty';
+                                }
+                            }
+                        }
+                        
+                        function renderRecentGuests() {
+                            const tbody = document.getElementById('recent-guests-body');
+                            tbody.innerHTML = '';
+                            
+                            // تجميع بيانات الدخول لكل ضيف
+                            const guestAttendanceMap = {};
+                            
+                            attendance.forEach(record => {
+                                const guest = guests.find(g => g.qrData === record.qrData);
+                                if (guest) {
+                                    if (!guestAttendanceMap[guest.id]) {
+                                        guestAttendanceMap[guest.id] = {
+                                            guest: guest,
+                                            entries: [],
+                                            entryCount: 0
+                                        };
+                                    }
+                                    
+                                    guestAttendanceMap[guest.id].entries.push(record);
+                                    guestAttendanceMap[guest.id].entryCount++;
+                                }
+                            });
+                            
+                            // تحويل الـ Map إلى مصفوفة وعرضها
+                            Object.values(guestAttendanceMap).forEach(item => {
+                                const row = document.createElement('tr');
+                                const guest = item.guest;
+                                
+                                // العثور على آخر وقت دخول
+                                let lastEntryTime = 'غير محدد';
+                                if (item.entries.length > 0) {
+                                    const lastEntry = item.entries[0];
+                                    if (lastEntry.scanTime) {
+                                        if (lastEntry.scanTime.toDate) {
+                                            lastEntryTime = lastEntry.scanTime.toDate().toLocaleString('ar-EG');
+                                        } else if (lastEntry.scanTime.seconds) {
+                                            lastEntryTime = new Date(lastEntry.scanTime.seconds * 1000).toLocaleString('ar-EG');
+                                        }
+                                    }
+                                }
+                                
+                                row.innerHTML = `
+                                    <td>${guest.name || 'بدون اسم'}</td>
+                                    <td>${guest.individualCount || 1}</td>
+                                    <td>
+                                        <span class="badge" style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 20px; font-weight: bold;">
+                                            ${item.entryCount}
+                                        </span>
+                                    </td>
+                                    <td>${lastEntryTime}</td>
+                                    <td>
+                                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
+                                            <i class="fas fa-qrcode"></i> عرض QR
+                                        </button>
+                                        <button class="btn btn-danger btn-sm delete-guest-attendance" data-id="${guest.id}">
+                                            <i class="fas fa-trash"></i> حذف
+                                        </button>
+                                    </td>
+                                `;
+                                
+                                tbody.appendChild(row);
+                            });
+                            
+                            // إضافة مستمعي الأحداث للأزرار الجديدة
+                            tbody.querySelectorAll('.view-qr').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const guestId = this.getAttribute('data-id');
+                                    if (guestId) {
+                                        showQRModal(guestId);
+                                    }
+                                });
+                            });
+                            
+                            tbody.querySelectorAll('.delete-guest-attendance').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const guestId = this.getAttribute('data-id');
+                                    deleteAllGuestAttendance(guestId);
+                                });
+                            });
+                        }
+                        
+                        function renderAllGuests() {
+                            const tbody = document.getElementById('all-guests-body');
+                            tbody.innerHTML = '';
+                            
+                            guests.forEach((guest, index) => {
+                                const row = document.createElement('tr');
+                                
+                                const date = guest.timestamp ? 
+                                    (guest.timestamp.toDate ? 
+                                        guest.timestamp.toDate().toLocaleDateString('ar-EG') : 
+                                        new Date(guest.timestamp.seconds * 1000).toLocaleDateString('ar-EG')) : 
+                                    'غير محدد';
+                                
+                                // حساب عدد مرات دخول هذا الضيف
+                                const guestEntries = attendance.filter(a => a.qrData === guest.qrData);
+                                const entryCount = guestEntries.length;
+                                
+                                row.innerHTML = `
+                                    <td>${index + 1}</td>
+                                    <td>${guest.name || 'بدون اسم'}</td>
+                                    <td>${guest.individualCount || 1}</td>
+                                    <td>
+                                        <button class="btn btn-outline btn-sm view-qr" data-id="${guest.id}">
+                                            <i class="fas fa-qrcode"></i> عرض QR
+                                        </button>
+                                    </td>
+                                    <td>${guest.quickCode || '--'}</td>
+                                    <td>
+                                        <span style="color: ${entryCount > 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: bold;">
+                                            ${entryCount > 0 ? 'حاضر' : 'غائب'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: var(--primary-color); color: white; padding: 4px 8px; border-radius: 20px; font-weight: bold;">
+                                            ${entryCount}
+                                        </span>
+                                    </td>
+                                    <td>${date}</td>
+                                    <td>
+                                        <button class="btn btn-outline btn-sm delete-guest" data-id="${guest.id}">
+                                            <i class="fas fa-trash"></i> حذف
+                                        </button>
+                                    </td>
+                                `;
+                                
+                                tbody.appendChild(row);
+                            });
+                            
+                            // إضافة مستمعي الأحداث للأزرار
+                            tbody.querySelectorAll('.view-qr').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const guestId = this.getAttribute('data-id');
+                                    showQRModal(guestId);
+                                });
+                            });
+                            
+                            tbody.querySelectorAll('.delete-guest').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const guestId = this.getAttribute('data-id');
+                                    deleteGuest(guestId);
+                                });
+                            });
+                        }
+                        
+                        async function handleAddGuest(e) {
+                            e.preventDefault();
+                            
+                            const name = document.getElementById('guest-name').value.trim();
+                            const individualCount = parseInt(document.getElementById('guest-count').value) || 1;
+                            
+                            if (!name) {
+                                showToast('يرجى إدخال اسم الضيف', 'warning');
+                                document.getElementById('guest-name').focus();
+                                return;
+                            }
+                            
+                            if (individualCount < 1) {
+                                showToast('عدد الأفراد يجب أن يكون 1 على الأقل', 'warning');
+                                document.getElementById('guest-count').focus();
+                                return;
+                            }
+                            
+                            try {
+                                // توليد معرف فريد لـ QR
+                                const qrData = `SMART_HALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                                
+                                // توليد رمز سريع مكون من 6 أرقام
+                                const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
+                                
+                                // عرض حالة التحميل
+                                const submitBtn = document.querySelector('#guest-form button[type="submit"]');
+                                const originalText = submitBtn.innerHTML;
+                                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإنشاء...';
+                                submitBtn.disabled = true;
+                                
+                                // توليد صورة QR مع الرمز السريع وعدد الأفراد
+                                const qrImageUrl = await generateQRCodeWithDetails(qrData, name, quickCode, individualCount);
+                                
+                                // حفظ في Firestore
+                                const guestData = {
+                                    name,
+                                    individualCount,
+                                    qrData,
+                                    quickCode,
+                                    qrImageUrl,
+                                    timestamp: window.firebase.serverTimestamp()
+                                };
+                                
+                                const docRef = await window.firebase.addDoc(
+                                    window.firebase.collection(window.firebase.db, 'guests'),
+                                    guestData
+                                );
+                                
+                                // نجاح
+                                showToast(`تم إضافة الضيف "${name}" (${individualCount} أفراد) بنجاح - الرمز السريع: ${quickCode}`, 'success');
+                                document.getElementById('guest-form').reset();
+                                document.getElementById('guest-count').value = 1;
+                                document.getElementById('add-guest-form').style.display = 'none';
+                                
+                                // إعادة تحميل الضيوف
+                                loadGuests();
+                                
+                            } catch (error) {
+                                console.error('Error adding guest:', error);
+                                showToast(`حدث خطأ في إضافة الضيف: ${error.message}`, 'error');
+                            } finally {
+                                // استعادة حالة الزر
+                                const submitBtn = document.querySelector('#guest-form button[type="submit"]');
+                                submitBtn.innerHTML = '<i class="fas fa-qrcode"></i> إنشاء QR وحفظ';
+                                submitBtn.disabled = false;
+                            }
+                        }
+                        
+                        function generateQRCodeWithDetails(qrData, name, quickCode, individualCount) {
+                            return new Promise((resolve, reject) => {
+                                try {
+                                    // إنشاء عنصر canvas
+                                    const canvas = document.createElement('canvas');
+                                    const size = 400;
+                                    
+                                    // تحديد حجم canvas
+                                    canvas.width = size;
+                                    canvas.height = size + 100; // مساحة إضافية للمعلومات
+                                    
+                                    const ctx = canvas.getContext('2d');
+                                    
+                                    // تعيين الخلفية
+                                    ctx.fillStyle = '#FFFFFF';
+                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                    
+                                    // توليد QR code على canvas مؤقت
+                                    const qrCanvas = document.createElement('canvas');
+                                    
+                                    QRCode.toCanvas(qrCanvas, qrData, {
+                                        width: 300,
+                                        margin: 2,
+                                        color: {
+                                            dark: '#000000',
+                                            light: '#FFFFFF'
+                                        }
+                                    }, function(error) {
+                                        if (error) {
+                                            reject(error);
+                                        } else {
+                                            // رسم QR code على canvas الرئيسي
+                                            const qrX = (canvas.width - 300) / 2;
+                                            const qrY = 50;
+                                            ctx.drawImage(qrCanvas, qrX, qrY);
+                                            
+                                            // إضافة اسم الضيف فوق QR code
+                                            ctx.font = 'bold 22px Arial';
+                                            ctx.fillStyle = '#000000';
+                                            ctx.textAlign = 'center';
+                                            ctx.fillText(name, canvas.width / 2, 35);
+                                            
+                                            // إضافة عدد الأفراد تحت الاسم
+                                            ctx.font = 'bold 18px Arial';
+                                            ctx.fillStyle = '#4361ee';
+                                            ctx.fillText(`عدد الأفراد: ${individualCount}`, canvas.width / 2, 75);
+                                            
+                                            // إضافة الرمز السريع تحت QR code
+                                            ctx.font = 'bold 24px Arial';
+                                            ctx.fillStyle = '#f72585'; // لون مختلف
+                                            ctx.fillText(`الرمز السريع: ${quickCode}`, canvas.width / 2, qrY + 330);
+                                            
+                                            // إضافة تعليمات صغيرة
+                                            ctx.font = '14px Arial';
+                                            ctx.fillStyle = '#666666';
+                                            ctx.fillText('يمكن إدخال هذا الرقم يدوياً', canvas.width / 2, qrY + 360);
+                                            
+                                            // تحويل canvas إلى data URL
+                                            const dataUrl = canvas.toDataURL('image/png');
+                                            resolve(dataUrl);
+                                        }
+                                    });
+                                } catch (error) {
+                                    // استخدام رابط بديل إذا فشل توليد QR
+                                    console.warn('QR generation failed, using fallback:', error);
+                                    resolve(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}&qzone=2&format=png`);
+                                }
+                            });
+                        }
+                        
+                        function showQRModal(guestId) {
+                            const guest = guests.find(g => g.id === guestId);
+                            if (!guest) return;
+                            
+                            const modal = document.getElementById('qr-modal');
+                            const title = document.getElementById('qr-modal-title');
+                            const imageContainer = document.getElementById('qr-modal-image');
+                            const guestName = document.getElementById('qr-modal-guest');
+                            const guestCountDisplay = document.getElementById('guest-count-display');
+                            const quickCodeContainer = document.getElementById('qr-quickcode');
+                            
+                            title.textContent = `QR Code - ${guest.name}`;
+                            guestName.textContent = guest.name;
+                            guestCountDisplay.textContent = guest.individualCount || 1;
+                            
+                            // عرض الرمز السريع
+                            if (guest.quickCode) {
+                                quickCodeContainer.innerHTML = `
+                                    <div style="text-align: center;">
+                                        <p style="font-size: 16px; margin-bottom: 5px;">الرمز السريع:</p>
+                                        <p style="font-size: 28px; font-weight: bold; color: #f72585; letter-spacing: 3px; background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                                            ${guest.quickCode}
+                                        </p>
+                                        <p style="font-size: 14px; color: #666; margin-top: 5px;">يمكن إدخال هذا الرقم يدوياً</p>
+                                    </div>
+                                `;
+                            } else {
+                                quickCodeContainer.innerHTML = '<p style="color: #999;">لا يوجد رمز سريع</p>';
+                            }
+                            
+                            // مسح الصورة السابقة
+                            imageContainer.innerHTML = '';
+                            
+                            // إنشاء وإضافة الصورة
+                            const img = document.createElement('img');
+                            img.src = guest.qrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(guest.qrData || guest.id)}`;
+                            img.alt = `QR Code لـ ${guest.name}`;
+                            img.style.width = '100%';
+                            img.style.maxWidth = '400px';
+                            img.style.borderRadius = '8px';
+                            
+                            imageContainer.appendChild(img);
+                            
+                            // عرض النافذة المنبثقة
+                            modal.style.display = 'flex';
+                        }
+                        
+                        function printQRImage(guestName, guestCount, qrImageUrl, quickCode) {
+                            const printWindow = window.open('', '_blank');
+                            printWindow.document.write(`
+                                <!DOCTYPE html>
+                                <html>
+                                <head>
+                                    <title>طباعة QR - ${guestName}</title>
+                                    <style>
+                                        body { 
+                                            font-family: Arial, sans-serif; 
+                                            text-align: center; 
+                                            padding: 20px; 
+                                            margin: 0;
+                                        }
+                                        .container {
+                                            max-width: 400px;
+                                            margin: 0 auto;
+                                            padding: 20px;
+                                            border: 1px solid #ddd;
+                                            border-radius: 10px;
+                                        }
+                                        h2 { color: #333; margin-bottom: 10px; }
+                                        h3 { color: #666; margin-bottom: 20px; }
+                                        img { 
+                                            max-width: 100%; 
+                                            height: auto; 
+                                            margin: 20px 0; 
+                                            border: 1px solid #eee;
+                                        }
+                                        .guest-info {
+                                            background-color: #f9f9f9;
+                                            padding: 15px;
+                                            border-radius: 8px;
+                                            margin: 15px 0;
+                                        }
+                                        .quick-code {
+                                            font-family: monospace;
+                                            font-size: 28px;
+                                            font-weight: bold;
+                                            letter-spacing: 5px;
+                                            color: #f72585;
+                                            background: #f5f5f5;
+                                            padding: 15px;
+                                            border-radius: 5px;
+                                            margin: 20px 0;
+                                            direction: ltr;
+                                            text-align: center;
+                                        }
+                                        .code-label {
+                                            font-size: 16px;
+                                            color: #666;
+                                            margin-bottom: 10px;
+                                        }
+                                        .info { 
+                                            margin: 20px 0; 
+                                            padding: 10px;
+                                            background-color: #f9f9f9;
+                                            border-radius: 5px;
+                                        }
+                                        @media print {
+                                            button { display: none; }
+                                            .container { border: none; }
+                                        }
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <h2>Smart Banquet Hall</h2>
+                                        <h3>بطاقة ضيف</h3>
+                                        <div class="guest-info">
+                                            <p style="font-size: 1.4rem; font-weight: bold; margin-bottom: 10px;">${guestName}</p>
+                                            <p style="color: #4361ee; font-weight: bold;">عدد الأفراد: ${guestCount}</p>
+                                        </div>
+                                        <div class="info">
+                                            <p>يرجى عرض هذا الرمز عند المدخل</p>
+                                        </div>
+                                        <img src="${qrImageUrl}" alt="QR Code">
+                                        ${quickCode ? `
+                                        <div class="code-label">الرمز السريع:</div>
+                                        <div class="quick-code">${quickCode}</div>
+                                        <div class="info">
+                                            <p>يمكن إدخال هذا الرقم يدوياً في حالة عدم إمكانية مسح QR</p>
+                                        </div>
+                                        ` : ''}
+                                        <div class="info">
+                                            <p>نظام القاعة الذكية © 2024</p>
+                                        </div>
+                                        <br>
+                                        <button onclick="window.print()" style="padding: 10px 20px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer;">طباعة</button>
+                                        <button onclick="window.close()" style="padding: 10px 20px; background: #f72585; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">إغلاق</button>
+                                    </div>
+                                </body>
+                                </html>
+                            `);
+                            printWindow.document.close();
+                        }
+                        
+                        function printAllQRCodes() {
+                            if (guests.length === 0) {
+                                showToast('لا يوجد ضيوف لطباعة QR خاصتهم', 'warning');
+                                return;
+                            }
+                            
+                            const printWindow = window.open('', '_blank');
+                            let content = `
+                                <!DOCTYPE html>
+                                <html>
+                                <head>
+                                    <title>طباعة جميع رموز QR</title>
+                                    <style>
+                                        body { 
+                                            font-family: Arial, sans-serif; 
+                                            padding: 20px; 
+                                            margin: 0;
+                                        }
+                                        .header {
+                                            text-align: center;
+                                            margin-bottom: 30px;
+                                        }
+                                        h2 { color: #333; }
+                                        .qr-grid { 
+                                            display: grid; 
+                                            grid-template-columns: repeat(3, 1fr); 
+                                            gap: 20px; 
+                                        }
+                                        .qr-card { 
+                                            text-align: center; 
+                                            border: 1px solid #ddd; 
+                                            padding: 15px; 
+                                            border-radius: 10px;
+                                            page-break-inside: avoid;
+                                        }
+                                        .qr-card h4 { 
+                                            margin: 10px 0; 
+                                            font-size: 16px;
+                                            height: 40px;
+                                            overflow: hidden;
+                                        }
+                                        .guest-count {
+                                            color: #4361ee;
+                                            font-weight: bold;
+                                            margin: 5px 0;
+                                        }
+                                        .quick-code {
+                                            font-family: monospace;
+                                            font-size: 18px;
+                                            font-weight: bold;
+                                            color: #f72585;
+                                            background: #f5f5f5;
+                                            padding: 8px;
+                                            border-radius: 3px;
+                                            margin: 10px 0;
+                                            direction: ltr;
+                                            text-align: center;
+                                        }
+                                        img { 
+                                            max-width: 100%; 
+                                            height: auto;
+                                            max-height: 150px;
+                                        }
+                                        @media print {
+                                            .qr-grid { grid-template-columns: repeat(2, 1fr); }
+                                            button { display: none; }
+                                            .header { margin-bottom: 20px; }
+                                        }
+                                        @media screen {
+                                            .controls {
+                                                text-align: center;
+                                                margin-top: 30px;
+                                                padding-top: 20px;
+                                                border-top: 1px solid #ddd;
+                                            }
+                                            button {
+                                                padding: 10px 20px;
+                                                background: #4361ee;
+                                                color: white;
+                                                border: none;
+                                                border-radius: 5px;
+                                                cursor: pointer;
+                                                margin: 0 5px;
+                                            }
+                                            button.close {
+                                                background: #f72585;
+                                            }
+                                        }
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="header">
+                                        <h2>Smart Banquet Hall - جميع رموز QR للضيوف</h2>
+                                        <p>عدد الضيوف: ${guests.length}</p>
+                                        <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</p>
+                                    </div>
+                                    <div class="qr-grid">
+                            `;
+                            
+                            guests.forEach(guest => {
+                                const qrUrl = guest.qrImageUrl || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(guest.qrData || guest.id)}`;
+                                content += `
+                                    <div class="qr-card">
+                                        <h4>${guest.name}</h4>
+                                        <div class="guest-count">عدد الأفراد: ${guest.individualCount || 1}</div>
+                                        <img src="${qrUrl}" alt="QR Code">
+                                        <div class="quick-code">${guest.quickCode || '--'}</div>
+                                    </div>
+                                `;
+                            });
+                            
+                            content += `
+                                    </div>
+                                    <div class="controls">
+                                        <button onclick="window.print()">طباعة</button>
+                                        <button onclick="window.close()" class="close">إغلاق</button>
+                                    </div>
+                                </body>
+                                </html>
+                            `;
+                            
+                            printWindow.document.write(content);
+                            printWindow.document.close();
+                        }
+                        
+                        async function deleteGuest(guestId) {
+                            if (!confirm('هل أنت متأكد من حذف هذا الضيف؟')) return;
+                            
+                            try {
+                                await window.firebase.deleteDoc(
+                                    window.firebase.doc(window.firebase.db, 'guests', guestId)
+                                );
+                                
+                                showToast('تم حذف الضيف بنجاح', 'success');
+                                loadGuests();
+                                loadAttendance();
+                            } catch (error) {
+                                console.error('Error deleting guest:', error);
+                                showToast('حدث خطأ في حذف الضيف', 'error');
+                            }
+                        }
+                        
+                        async function deleteAllGuestAttendance(guestId) {
+                            const guest = guests.find(g => g.id === guestId);
+                            if (!guest) return;
+                            
+                            if (!confirm(`هل أنت متأكد من حذف جميع سجلات دخول ${guest.name}؟`)) return;
+                            
+                            try {
+                                // العثور على جميع سجلات الحضور لهذا الضيف
+                                const guestAttendance = attendance.filter(a => a.qrData === guest.qrData);
+                                
+                                const deletePromises = guestAttendance.map(record =>
+                                    window.firebase.deleteDoc(
+                                        window.firebase.doc(window.firebase.db, 'attendance', record.id)
+                                    )
+                                );
+                                
+                                await Promise.all(deletePromises);
+                                
+                                showToast(`تم حذف جميع سجلات دخول ${guest.name}`, 'success');
+                                loadAttendance();
+                            } catch (error) {
+                                console.error('Error deleting guest attendance:', error);
+                                showToast('حدث خطأ في حذف سجلات الدخول', 'error');
+                            }
+                        }
+                        
+                        async function deleteAllGuests() {
+                            if (guests.length === 0) {
+                                showToast('لا يوجد ضيوف لحذفهم', 'warning');
+                                return;
+                            }
+                            
+                            if (!confirm(`هل أنت متأكد من حذف جميع الضيوف (${guests.length})؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
+                                return;
+                            }
+                            
+                            try {
+                                const deletePromises = guests.map(guest => 
+                                    window.firebase.deleteDoc(
+                                        window.firebase.doc(window.firebase.db, 'guests', guest.id)
+                                    )
+                                );
+                                
+                                await Promise.all(deletePromises);
+                                
+                                // Also delete attendance records
+                                const attendanceDeletePromises = attendance.map(record =>
+                                    window.firebase.deleteDoc(
+                                        window.firebase.doc(window.firebase.db, 'attendance', record.id)
+                                    )
+                                );
+                                
+                                await Promise.all(attendanceDeletePromises);
+                                
+                                showToast('تم حذف جميع الضيوف وسجلات الحضور بنجاح', 'success');
+                                loadGuests();
+                                loadAttendance();
+                            } catch (error) {
+                                console.error('Error deleting all guests:', error);
+                                showToast('حدث خطأ في حذف الضيوف', 'error');
+                            }
+                        }
+                        
+                        function handleExcelUpload() {
+                            const fileInput = document.getElementById('excel-file');
+                            const file = fileInput.files[0];
+                            
+                            if (!file) {
+                                showToast('يرجى اختيار ملف Excel أولاً', 'warning');
+                                return;
+                            }
+                            
+                            const progressDiv = document.getElementById('excel-progress');
+                            const progressBar = document.getElementById('excel-progress-bar');
+                            const progressText = document.getElementById('excel-progress-text');
+                            
+                            progressDiv.style.display = 'block';
+                            progressBar.style.width = '0%';
+                            progressText.textContent = '0%';
+                            
+                            const reader = new FileReader();
+                            
+                            reader.onload = async function(e) {
+                                try {
+                                    const data = new Uint8Array(e.target.result);
+                                    const workbook = XLSX.read(data, { type: 'array' });
+                                    
+                                    // الحصول على أول ورقة
+                                    const sheetName = workbook.SheetNames[0];
+                                    const worksheet = workbook.Sheets[sheetName];
+                                    
+                                    // التحويل إلى JSON
+                                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                                    
+                                    // استخراج أسماء الضيوف (العمود الأول) وعدد الأفراد (العمود الثاني)
+                                    const guestRows = jsonData.filter(row => row && row.length > 0 && row[0]);
+                                    
+                                    if (guestRows.length === 0) {
+                                        showToast('لا توجد بيانات في الملف', 'warning');
+                                        progressDiv.style.display = 'none';
+                                        return;
+                                    }
+                                    
+                                    // تخطي العنوان إذا كان موجوداً
+                                    const startRow = (guestRows[0][0].toString().toLowerCase().includes('اسم') || 
+                                                     guestRows[0][0].toString().toLowerCase().includes('name')) ? 1 : 0;
+                                    
+                                    const guestList = [];
+                                    for (let i = startRow; i < guestRows.length; i++) {
+                                        const name = guestRows[i][0] ? guestRows[i][0].toString().trim() : '';
+                                        if (name) {
+                                            const individualCount = guestRows[i][1] ? 
+                                                parseInt(guestRows[i][1].toString().trim()) || 1 : 1;
+                                            
+                                            guestList.push({
+                                                name: name,
+                                                individualCount: Math.max(1, Math.min(individualCount, 20)) // تقييد بين 1 و 20
+                                            });
+                                        }
+                                    }
+                                    
+                                    if (guestList.length === 0) {
+                                        showToast('لا توجد أسماء ضيوف في الملف', 'warning');
+                                        progressDiv.style.display = 'none';
+                                        return;
+                                    }
+                                    
+                                    let successCount = 0;
+                                    let errorCount = 0;
+                                    
+                                    for (let i = 0; i < guestList.length; i++) {
+                                        const guest = guestList[i];
+                                        
+                                        // تحديث التقدم
+                                        const progress = Math.round(((i + 1) / guestList.length) * 100);
+                                        progressBar.style.width = `${progress}%`;
+                                        progressText.textContent = `${progress}% (${i + 1}/${guestList.length})`;
+                                        
+                                        try {
+                                            // توليد معرف فريد لـ QR
+                                            const qrData = `SMART_HALL_EXCEL_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
+                                            
+                                            // توليد رمز سريع مكون من 6 أرقام
+                                            const quickCode = Math.floor(100000 + Math.random() * 900000).toString();
+                                            
+                                            // توليد صورة QR مع التفاصيل
+                                            const qrImageUrl = await generateQRCodeWithDetails(qrData, guest.name, quickCode, guest.individualCount);
+                                            
+                                            // حفظ في Firestore
+                                            const guestData = {
+                                                name: guest.name,
+                                                individualCount: guest.individualCount,
+                                                qrData,
+                                                quickCode,
+                                                qrImageUrl,
+                                                timestamp: window.firebase.serverTimestamp()
+                                            };
+                                            
+                                            await window.firebase.addDoc(
+                                                window.firebase.collection(window.firebase.db, 'guests'),
+                                                guestData
+                                            );
+                                            
+                                            successCount++;
+                                        } catch (error) {
+                                            console.error(`Error adding guest ${guest.name}:`, error);
+                                            errorCount++;
+                                        }
+                                    }
+                                    
+                                    // الانتهاء
+                                    progressDiv.style.display = 'none';
+                                    
+                                    if (successCount > 0) {
+                                        showToast(`تم إضافة ${successCount} ضيف بنجاح${errorCount > 0 ? `، فشل: ${errorCount}` : ''}`, 'success');
+                                    } else {
+                                        showToast('فشل في إضافة أي ضيف', 'error');
+                                    }
+                                    
+                                    // مسح حقل الملف
+                                    fileInput.value = '';
+                                    
+                                    // إعادة تحميل الضيوف
+                                    loadGuests();
+                                    
+                                } catch (error) {
+                                    console.error('Error processing Excel file:', error);
+                                    showToast(`حدث خطأ في معالجة ملف Excel: ${error.message}`, 'error');
+                                    progressDiv.style.display = 'none';
+                                }
                             };
                             
-                            await window.firebase.addDoc(
-                                window.firebase.collection(window.firebase.db, 'guests'),
-                                guestData
-                            );
+                            reader.onerror = function() {
+                                showToast('حدث خطأ في قراءة الملف', 'error');
+                                progressDiv.style.display = 'none';
+                            };
                             
-                            successCount++;
-                        } catch (error) {
-                            console.error(`Error adding guest ${guest.name}:`, error);
-                            errorCount++;
+                            reader.readAsArrayBuffer(file);
                         }
-                    }
-                    
-                    // الانتهاء
-                    progressDiv.style.display = 'none';
-                    
-                    if (successCount > 0) {
-                        showToast(`تم إضافة ${successCount} ضيف بنجاح${errorCount > 0 ? `، فشل: ${errorCount}` : ''}`, 'success');
-                    } else {
-                        showToast('فشل في إضافة أي ضيف', 'error');
-                    }
-                    
-                    // مسح حقل الملف
-                    fileInput.value = '';
-                    
-                    // إعادة تحميل الضيوف
-                    loadGuests();
-                    
-                } catch (error) {
-                    console.error('Error processing Excel file:', error);
-                    showToast(`حدث خطأ في معالجة ملف Excel: ${error.message}`, 'error');
-                    progressDiv.style.display = 'none';
-                }
-            };
-            
-            reader.onerror = function() {
-                showToast('حدث خطأ في قراءة الملف', 'error');
-                progressDiv.style.display = 'none';
-            };
-            
-            reader.readAsArrayBuffer(file);
-        }
-        
-        function downloadExcelTemplate() {
-            // إنشاء نموذج Excel بسيط
-            const data = [
-                ['اسم الضيف', 'عدد الأفراد'],
-                ['أحمد محمد', '2'],
-                ['سارة خالد', '4'],
-                ['محمود علي', '1'],
-                ['فاطمة حسن', '3'],
-                ['خالد محمود', '5']
-            ];
-            
-            const worksheet = XLSX.utils.aoa_to_sheet(data);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'الضيوف');
-            
-            // توليد وتحميل الملف
-            XLSX.writeFile(workbook, 'نموذج_الضيوف.xlsx');
-            showToast('تم تحميل النموذج بنجاح', 'success');
-        }
-        
-        function exportAttendanceToExcel() {
-            if (attendance.length === 0) {
-                showToast('لا توجد سجلات حضور لتصديرها', 'warning');
-                return;
-            }
-            
-            // Prepare data for Excel
-            const data = [
-                ['اسم الضيف', 'عدد الأفراد', 'الرمز السريع', 'رمز QR', 'رقم الدخول', 'وقت المسح', 'تم فتح الباب', 'ملاحظات']
-            ];
-            
-            attendance.forEach(record => {
-                const guest = guests.find(g => g.qrData === record.qrData);
-                const guestName = guest ? guest.name : 'ضيف غير معروف';
-                const individualCount = guest ? guest.individualCount || 1 : 1;
-                const quickCode = guest ? guest.quickCode : '--';
-                
-                let scanTime = 'غير محدد';
-                if (record.scanTime) {
-                    if (record.scanTime.toDate) {
+                        
+                        function downloadExcelTemplate() {
+                            // إنشاء نموذج Excel بسيط
+                            const data = [
+                                ['اسم الضيف', 'عدد الأفراد'],
+                                ['أحمد محمد', '2'],
+                                ['سارة خالد', '4'],
+                                ['محمود علي', '1'],
+                                ['فاطمة حسن', '3'],
+                                ['خالد محمود', '5']
+                            ];
+                            
+                            const worksheet = XLSX.utils.aoa_to_sheet(data);
+                            const workbook = XLSX.utils.book_new();
+                            XLSX.utils.book_append_sheet(workbook, worksheet, 'الضيوف');
+                            
+                            // توليد وتحميل الملف
+                            XLSX.writeFile(workbook, 'نموذج_الضيوف.xlsx');
+                            showToast('تم تحميل النموذج بنجاح', 'success');
+                        }
+                        
+                        function exportAttendanceToExcel() {
+                            if (attendance.length === 0) {
+                                showToast('لا توجد سجلات حضور لتصديرها', 'warning');
+                                return;
+                            }
+                            
+                            // Prepare data for Excel
+                            const data = [
+                                ['اسم الضيف', 'عدد الأفراد', 'الرمز السريع', 'رمز QR', 'رقم الدخول', 'وقت المسح', 'تم فتح الباب', 'ملاحظات']
+                            ];
+                            
+                            attendance.forEach(record => {
+                                const guest = guests.find(g => g.qrData === record.qrData);
+                                const guestName = guest ? guest.name : 'ضيف غير معروف';
+                                const individualCount = guest ? guest.individualCount || 1 : 1;
+                                const quickCode = guest ? guest.quickCode : '--';
+                                
+                                let scanTime = 'غير محدد';
+                                if (record.scanTime) {
+                                    if (record.scanTime.toDate) {
                                         scanTime = record.scanTime.toDate().toLocaleString('ar-EG');
                                     } else if (record.scanTime.seconds) {
                                         scanTime = new Date(record.scanTime.seconds * 1000).toLocaleString('ar-EG');
@@ -3301,27 +3314,22 @@
                             }
                         }
                         
-                        function openDoorForGuest(guestName, individualCount) {
-                            // Update UI
-                            document.getElementById('door-control-status').className = 'control-status status-on';
-                            document.getElementById('door-control-status').textContent = 'مفتوح';
-                            document.getElementById('door-status').textContent = 'مفتوح';
+                        async function openDoorForGuest(guestName, individualCount) {
+                            // عرض حالة "جاري فتح الباب..."
+                            const doorControlStatus = document.getElementById('door-control-status');
+                            doorControlStatus.className = 'control-status status-processing';
+                            doorControlStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الفتح...';
                             
                             document.getElementById('open-door-btn').disabled = true;
-                            document.getElementById('close-door-btn').disabled = false;
+                            document.getElementById('close-door-btn').disabled = true;
                             
-                            // Send command to ESP8266 to open door
+                            // إرسال أمر إلى ESP8266 لفتح الباب
                             sendESPCommand('DOOR_OPEN');
                             
-                            showToast(`تم فتح الباب لـ ${guestName} (${individualCount} فرد)`, 'success');
-                            
-                            // Auto close after 10 seconds
-                            setTimeout(() => {
-                                closeDoor();
-                            }, 10000);
+                            showToast(`تم إرسال أمر فتح الباب لـ ${guestName} (${individualCount} فرد) - جاري التنفيذ...`, 'info');
                         }
                         
-                        function checkManualQR() {
+                        async function checkManualQR() {
                             const manualQR = document.getElementById('manual-qr').value.trim();
                             
                             if (!manualQR) {
@@ -3333,186 +3341,138 @@
                             handleScannedQR(manualQR);
                         }
                         
-                        function openDoor() {
-                            // Update UI
-                            document.getElementById('door-control-status').className = 'control-status status-on';
-                            document.getElementById('door-control-status').textContent = 'مفتوح';
-                            document.getElementById('door-status').textContent = 'مفتوح';
+                        async function openDoor() {
+                            const doorControlStatus = document.getElementById('door-control-status');
+                            const openBtn = document.getElementById('open-door-btn');
+                            const closeBtn = document.getElementById('close-door-btn');
                             
-                            document.getElementById('open-door-btn').disabled = true;
-                            document.getElementById('close-door-btn').disabled = false;
+                            // عرض حالة "جاري فتح الباب..."
+                            doorControlStatus.className = 'control-status status-processing';
+                            doorControlStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الفتح...';
+                            openBtn.disabled = true;
+                            closeBtn.disabled = true;
                             
-                            // Send command to ESP8266
+                            // إرسال الأمر إلى ESP8266
                             sendESPCommand('DOOR_OPEN');
                             
-                            showToast('تم إرسال أمر فتح الباب', 'success');
-                            
-                            // Auto close after 10 seconds
-                            setTimeout(() => {
-                                closeDoor();
-                            }, 10000);
+                            showToast('تم إرسال أمر فتح الباب - جاري التنفيذ...', 'info');
                         }
                         
-                        function closeDoor() {
-                            // Update UI
-                            document.getElementById('door-control-status').className = 'control-status status-off';
-                            document.getElementById('door-control-status').textContent = 'مغلق';
-                            document.getElementById('door-status').textContent = 'مغلق';
+                        async function closeDoor() {
+                            const doorControlStatus = document.getElementById('door-control-status');
+                            const openBtn = document.getElementById('open-door-btn');
+                            const closeBtn = document.getElementById('close-door-btn');
                             
-                            document.getElementById('open-door-btn').disabled = false;
-                            document.getElementById('close-door-btn').disabled = true;
+                            // عرض حالة "جاري الإغلاق..."
+                            doorControlStatus.className = 'control-status status-processing';
+                            doorControlStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإغلاق...';
+                            openBtn.disabled = true;
+                            closeBtn.disabled = true;
                             
-                            // Send command to ESP8266
+                            // إرسال الأمر إلى ESP8266
                             sendESPCommand('DOOR_CLOSE');
                             
-                            showToast('تم إرسال أمر إغلاق الباب', 'success');
+                            showToast('تم إرسال أمر إغلاق الباب - جاري التنفيذ...', 'info');
                         }
                         
                         // ==================== وظائف التحكم في الإضاءة المحدثة ====================
                         
-                        function toggleLight(lightNumber, turnOn) {
+                        async function toggleLight(lightNumber, turnOn) {
                             const statusElement = document.getElementById(`light${lightNumber}-control-status`);
                             const onBtn = document.getElementById(`light${lightNumber}-on-btn`);
                             const offBtn = document.getElementById(`light${lightNumber}-off-btn`);
                             
-                            if (turnOn) {
-                                statusElement.className = 'control-status status-on';
-                                statusElement.textContent = 'مشغلة';
-                                onBtn.disabled = true;
-                                offBtn.disabled = false;
-                                
-                                // تحديث Firebase مباشرة
-                                updateLightStatusInFirebase(lightNumber, true);
-                                
-                                // إرسال أمر إلى ESP8266
-                                sendESPCommand(`LIGHT${lightNumber}_ON`);
-                                
-                                showToast(`تم تشغيل الإضاءة ${lightNumber}`, 'success');
-                            } else {
-                                statusElement.className = 'control-status status-off';
-                                statusElement.textContent = 'مطفأة';
-                                onBtn.disabled = false;
-                                offBtn.disabled = true;
-                                
-                                // تحديث Firebase مباشرة
-                                updateLightStatusInFirebase(lightNumber, false);
-                                
-                                // إرسال أمر إلى ESP8266
-                                sendESPCommand(`LIGHT${lightNumber}_OFF`);
-                                
-                                showToast(`تم إطفاء الإضاءة ${lightNumber}`, 'success');
-                            }
+                            // عرض حالة "جاري المعالجة"
+                            statusElement.className = 'control-status status-processing';
+                            statusElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+                            onBtn.disabled = true;
+                            offBtn.disabled = true;
                             
-                            // تحديث حالة الأنوار الكلية
-                            updateLightsStatus();
-                        }
-                        
-                        function updateLightStatusInFirebase(lightNumber, isOn) {
-                            if (window.firebase && window.firebase.rtdb) {
-                                const path = `/devices/light${lightNumber}/status`;
-                                window.firebase.set(window.firebase.ref(window.firebase.rtdb, path), isOn)
-                                    .then(() => {
-                                        console.log(`Light ${lightNumber} status updated in Firebase: ${isOn}`);
-                                        
-                                        // تحديث الوقت أيضاً
-                                        const timePath = `/devices/light${lightNumber}/lastChange`;
-                                        window.firebase.set(window.firebase.ref(window.firebase.rtdb, timePath), Date.now());
-                                    })
-                                    .catch(error => {
-                                        console.error(`Error updating light ${lightNumber} status:`, error);
-                                    });
-                            }
+                            // إرسال الأمر إلى ESP8266
+                            sendESPCommand(`LIGHT${lightNumber}_${turnOn ? 'ON' : 'OFF'}`);
+                            
+                            showToast(`تم إرسال أمر ${turnOn ? 'تشغيل' : 'إطفاء'} الإضاءة ${lightNumber} - جاري التنفيذ...`, 'info');
                         }
                         
                         // ==================== دالة تشغيل كل الأنوار ====================
-                        function turnOnAllLights() {
+                        async function turnOnAllLights() {
                             console.log("تشغيل جميع الأنوار...");
-                            
-                            // تحديث حالة الأضواء في Firebase مباشرة
-                            updateLightStatusInFirebase(1, true);
-                            updateLightStatusInFirebase(2, true);
                             
                             // إرسال أمر مباشر إلى ESP8266
                             sendESPCommand('ALL_LIGHTS_ON');
                             
-                            // تحديث واجهة المستخدم فوراً
-                            setTimeout(() => {
-                                document.getElementById('light1-control-status').className = 'control-status status-on';
-                                document.getElementById('light1-control-status').textContent = 'مشغلة';
-                                document.getElementById('light1-on-btn').disabled = true;
-                                document.getElementById('light1-off-btn').disabled = false;
-                                
-                                document.getElementById('light2-control-status').className = 'control-status status-on';
-                                document.getElementById('light2-control-status').textContent = 'مشغلة';
-                                document.getElementById('light2-on-btn').disabled = true;
-                                document.getElementById('light2-off-btn').disabled = false;
-                                
-                                document.getElementById('lights-status').textContent = 'مشغلة';
-                            }, 300);
+                            // عرض حالة معالجة لكلا الأنوار
+                            document.getElementById('light1-control-status').className = 'control-status status-processing';
+                            document.getElementById('light1-control-status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+                            document.getElementById('light1-on-btn').disabled = true;
+                            document.getElementById('light1-off-btn').disabled = true;
                             
-                            showToast('تم تشغيل جميع الأنوار', 'success');
+                            document.getElementById('light2-control-status').className = 'control-status status-processing';
+                            document.getElementById('light2-control-status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+                            document.getElementById('light2-on-btn').disabled = true;
+                            document.getElementById('light2-off-btn').disabled = true;
+                            
+                            showToast('تم إرسال أمر تشغيل جميع الأنوار - جاري التنفيذ...', 'info');
                         }
                         
                         // ==================== دالة إطفاء كل الأنوار ====================
-                        function turnOffAllLights() {
+                        async function turnOffAllLights() {
                             console.log("إطفاء جميع الأنوار...");
-                            
-                            // تحديث حالة الأضواء في Firebase مباشرة
-                            updateLightStatusInFirebase(1, false);
-                            updateLightStatusInFirebase(2, false);
                             
                             // إرسال أمر مباشر إلى ESP8266
                             sendESPCommand('ALL_LIGHTS_OFF');
                             
-                            // تحديث واجهة المستخدم فوراً
-                            setTimeout(() => {
-                                document.getElementById('light1-control-status').className = 'control-status status-off';
-                                document.getElementById('light1-control-status').textContent = 'مطفأة';
-                                document.getElementById('light1-on-btn').disabled = false;
-                                document.getElementById('light1-off-btn').disabled = true;
-                                
-                                document.getElementById('light2-control-status').className = 'control-status status-off';
-                                document.getElementById('light2-control-status').textContent = 'مطفأة';
-                                document.getElementById('light2-on-btn').disabled = false;
-                                document.getElementById('light2-off-btn').disabled = true;
-                                
-                                document.getElementById('lights-status').textContent = 'مطفأة';
-                            }, 300);
+                            // عرض حالة معالجة لكلا الأنوار
+                            document.getElementById('light1-control-status').className = 'control-status status-processing';
+                            document.getElementById('light1-control-status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+                            document.getElementById('light1-on-btn').disabled = true;
+                            document.getElementById('light1-off-btn').disabled = true;
                             
-                            showToast('تم إطفاء جميع الأنوار', 'success');
+                            document.getElementById('light2-control-status').className = 'control-status status-processing';
+                            document.getElementById('light2-control-status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+                            document.getElementById('light2-on-btn').disabled = true;
+                            document.getElementById('light2-off-btn').disabled = true;
+                            
+                            showToast('تم إرسال أمر إطفاء جميع الأنوار - جاري التنفيذ...', 'info');
                         }
                         
                         function updateLightsStatus() {
                             const light1Status = document.getElementById('light1-control-status').textContent;
                             const light2Status = document.getElementById('light2-control-status').textContent;
                             
-                            if (light1Status === 'مشغلة' || light2Status === 'مشغلة') {
+                            if (light1Status.includes('مشغلة') || light2Status.includes('مشغلة')) {
                                 document.getElementById('lights-status').textContent = 'مشغلة';
-                            } else {
+                            } else if (light1Status.includes('مطفأة') && light2Status.includes('مطفأة')) {
                                 document.getElementById('lights-status').textContent = 'مطفأة';
                             }
                         }
                         
-                        function sendESPCommand(command) {
-                            console.log(`Sending command to ESP8266: ${command}`);
+                        async function sendESPCommand(command) {
+                            console.log(`إرسال أمر إلى ESP8266: ${command}`);
                             
-                            // تحديث Firebase Realtime Database مع الأمر
-                            window.firebase.set(window.firebase.ref(window.firebase.rtdb, 'commands/latest'), {
+                            // تحديث حالة الأمر في Firebase
+                            const commandData = {
                                 command: command,
                                 timestamp: Date.now(),
-                                executed: false
-                            })
-                            .then(() => {
-                                console.log(`Command ${command} sent to Firebase`);
+                                executed: false,
+                                acknowledged: false
+                            };
+                            
+                            try {
+                                await window.firebase.set(
+                                    window.firebase.ref(window.firebase.rtdb, 'commands/latest'), 
+                                    commandData
+                                );
+                                
+                                console.log(`✅ تم إرسال الأمر ${command} إلى Firebase`);
                                 
                                 // تحديث وقت آخر تحديث
-                                document.getElementById('last-update').textContent = 'الآن';
-                                showToast(`تم إرسال الأمر: ${command}`, 'success');
-                            })
-                            .catch(error => {
-                                console.error('Error sending command:', error);
+                                document.getElementById('last-update').textContent = 'جاري التنفيذ...';
+                                
+                            } catch (error) {
+                                console.error('❌ خطأ في إرسال الأمر:', error);
                                 showToast('تعذر إرسال الأمر إلى ESP8266', 'error');
-                            });
+                            }
                         }
                         
                         function refreshSystemStatus() {
@@ -4262,19 +4222,25 @@
                                     document.getElementById('door-status').textContent = isOpen ? 'مفتوح' : 'مغلق';
                                     
                                     const doorControlStatus = document.getElementById('door-control-status');
+                                    const openBtn = document.getElementById('open-door-btn');
+                                    const closeBtn = document.getElementById('close-door-btn');
+                                    
                                     if (isOpen) {
                                         doorControlStatus.className = 'control-status status-on';
-                                        doorControlStatus.textContent = 'مفتوح';
+                                        doorControlStatus.innerHTML = '<i class="fas fa-door-open"></i> مفتوح';
                                         
-                                        document.getElementById('open-door-btn').disabled = true;
-                                        document.getElementById('close-door-btn').disabled = false;
+                                        openBtn.disabled = true;
+                                        closeBtn.disabled = false;
                                     } else {
                                         doorControlStatus.className = 'control-status status-off';
-                                        doorControlStatus.textContent = 'مغلق';
+                                        doorControlStatus.innerHTML = '<i class="fas fa-door-closed"></i> مغلق';
                                         
-                                        document.getElementById('open-door-btn').disabled = false;
-                                        document.getElementById('close-door-btn').disabled = true;
+                                        openBtn.disabled = false;
+                                        closeBtn.disabled = true;
                                     }
+                                    
+                                    // تحديث وقت آخر تحديث
+                                    document.getElementById('last-update').textContent = 'قبل قليل';
                                 }
                             });
                             
@@ -4285,16 +4251,19 @@
                                     const isOn = snapshot.val() === true || snapshot.val() === 'on';
                                     
                                     const statusElement = document.getElementById('light1-control-status');
+                                    const onBtn = document.getElementById('light1-on-btn');
+                                    const offBtn = document.getElementById('light1-off-btn');
+                                    
                                     if (isOn) {
                                         statusElement.className = 'control-status status-on';
-                                        statusElement.textContent = 'مشغلة';
-                                        document.getElementById('light1-on-btn').disabled = true;
-                                        document.getElementById('light1-off-btn').disabled = false;
+                                        statusElement.innerHTML = '<i class="fas fa-lightbulb"></i> مشغلة';
+                                        onBtn.disabled = true;
+                                        offBtn.disabled = false;
                                     } else {
                                         statusElement.className = 'control-status status-off';
-                                        statusElement.textContent = 'مطفأة';
-                                        document.getElementById('light1-on-btn').disabled = false;
-                                        document.getElementById('light1-off-btn').disabled = true;
+                                        statusElement.innerHTML = '<i class="fas fa-lightbulb"></i> مطفأة';
+                                        onBtn.disabled = false;
+                                        offBtn.disabled = true;
                                     }
                                     
                                     updateLightsStatus();
@@ -4307,16 +4276,19 @@
                                     const isOn = snapshot.val() === true || snapshot.val() === 'on';
                                     
                                     const statusElement = document.getElementById('light2-control-status');
+                                    const onBtn = document.getElementById('light2-on-btn');
+                                    const offBtn = document.getElementById('light2-off-btn');
+                                    
                                     if (isOn) {
                                         statusElement.className = 'control-status status-on';
-                                        statusElement.textContent = 'مشغلة';
-                                        document.getElementById('light2-on-btn').disabled = true;
-                                        document.getElementById('light2-off-btn').disabled = false;
+                                        statusElement.innerHTML = '<i class="fas fa-lightbulb"></i> مشغلة';
+                                        onBtn.disabled = true;
+                                        offBtn.disabled = false;
                                     } else {
                                         statusElement.className = 'control-status status-off';
-                                        statusElement.textContent = 'مطفأة';
-                                        document.getElementById('light2-on-btn').disabled = false;
-                                        document.getElementById('light2-off-btn').disabled = true;
+                                        statusElement.innerHTML = '<i class="fas fa-lightbulb"></i> مطفأة';
+                                        onBtn.disabled = false;
+                                        offBtn.disabled = true;
                                     }
                                     
                                     updateLightsStatus();
