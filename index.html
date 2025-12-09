@@ -722,6 +722,24 @@
             color: var(--success-color);
         }
 
+        .advice-analysis {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--primary-color);
+            border-right: 5px solid var(--primary-color);
+        }
+
+        .advice-warning {
+            background-color: rgba(248, 150, 30, 0.1);
+            color: var(--warning-color);
+            border-right: 5px solid var(--warning-color);
+        }
+
+        .advice-critical {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger-color);
+            border-right: 5px solid var(--danger-color);
+        }
+
         /* Scanner cooldown indicator */
         .cooldown-indicator {
             position: absolute;
@@ -734,6 +752,186 @@
             font-size: 14px;
             display: none;
             z-index: 100;
+        }
+
+        /* Hall Status */
+        .hall-status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .hall-status-empty {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .hall-status-occupied {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        /* Analysis Card */
+        .analysis-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .analysis-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .analysis-header i {
+            font-size: 1.8rem;
+            margin-left: 15px;
+            color: var(--primary-color);
+        }
+
+        .analysis-header h3 {
+            font-size: 1.4rem;
+            color: var(--dark-color);
+            margin: 0;
+        }
+
+        .analysis-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .analysis-item:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .positive {
+            color: var(--success-color);
+        }
+
+        .negative {
+            color: var(--danger-color);
+        }
+
+        .neutral {
+            color: var(--gray-color);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background-color: #f0f0f0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.high {
+            background-color: var(--danger-color);
+        }
+
+        .progress-fill.medium {
+            background-color: var(--warning-color);
+        }
+
+        .progress-fill.low {
+            background-color: var(--success-color);
+        }
+
+        /* Real-time indicator */
+        .real-time-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .real-time-active {
+            background-color: var(--success-color);
+        }
+
+        .real-time-inactive {
+            background-color: var(--danger-color);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Data History Table */
+        .history-table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-table th {
+            background-color: #f8f9fa;
+            padding: 12px;
+            font-size: 0.9rem;
+            color: var(--dark-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .history-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+
+        .history-table tr:hover {
+            background-color: #f8f9fa;
         }
     </style>
     
@@ -767,7 +965,9 @@
             onValue,
             update,
             push,
-            remove
+            remove,
+            get,
+            child
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -810,7 +1010,9 @@
             onValue,
             update,
             push,
-            remove
+            remove,
+            get,
+            child
         };
     </script>
 </head>
@@ -877,7 +1079,7 @@
                     <li><a href="#" data-section="guests"><i class="fas fa-users"></i> إدارة الضيوف</a></li>
                     <li><a href="#" data-section="scanner"><i class="fas fa-qrcode"></i> مسح QR</a></li>
                     <li><a href="#" data-section="controls"><i class="fas fa-sliders-h"></i> التحكم الذكي</a></li>
-                    <li><a href="#" data-section="weather"><i class="fas fa-thermometer-half"></i> الطقس والمناخ</a></li>
+                    <li><a href="#" data-section="weather"><i class="fas fa-thermometer-half"></i> تحليل المناخ</a></li>
                 </ul>
             </div>
         </nav>
@@ -939,6 +1141,10 @@
                     <div class="card">
                         <div class="card-header">
                             <h3>إجراءات سريعة</h3>
+                            <div style="display: flex; align-items: center;">
+                                <span class="real-time-indicator real-time-active" id="realtime-indicator"></span>
+                                <span style="font-size: 0.9rem; color: var(--success-color);">تحديث تلقائي كل 2 ثانية</span>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                             <button id="quick-open-door" class="btn btn-success">
@@ -1294,68 +1500,172 @@
                     </div>
                 </section>
 
-                <!-- Weather Section -->
+                <!-- Weather Section - UPDATED -->
                 <section id="weather" class="content-section">
                     <div class="section-header">
-                        <h2><i class="fas fa-thermometer-half"></i> الطقس والمناخ</h2>
-                        <button id="refresh-weather" class="btn btn-primary">
-                            <i class="fas fa-sync-alt"></i> تحديث البيانات
-                        </button>
+                        <h2><i class="fas fa-thermometer-half"></i> تحليل مناخ القاعة الذكية</h2>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span class="real-time-indicator real-time-active" id="weather-realtime-indicator"></span>
+                            <span style="font-size: 0.9rem; color: var(--success-color);">تحديث تلقائي كل 2 ثانية</span>
+                            <button id="refresh-weather" class="btn btn-primary">
+                                <i class="fas fa-sync-alt"></i> تحديث التحليل
+                            </button>
+                            <button id="start-recording" class="btn btn-success">
+                                <i class="fas fa-record-vinyl"></i> بدء التسجيل
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Current Weather -->
+                    <!-- Hall Status & Current Readings -->
                     <div class="weather-card">
                         <div class="weather-info">
-                            <h3 id="outside-temp">--°C</h3>
-                            <p id="weather-description">جاري تحميل بيانات الطقس...</p>
-                            <p id="weather-location">القاهرة، مصر</p>
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                <h3 id="current-temp-display">--°C</h3>
+                                <div id="hall-status-badge" class="hall-status-badge hall-status-empty">
+                                    <i class="fas fa-users"></i> قاعة فارغة
+                                </div>
+                            </div>
+                            <p id="current-humidity-display">الرطوبة: --%</p>
+                            <p id="current-guests-display">الضيوف الحاضرين: 0/0</p>
+                            <p id="data-update-time" style="font-size: 0.9rem; opacity: 0.8;">
+                                <i class="fas fa-clock"></i> آخر تحديث: --
+                            </p>
+                            <p id="recording-status" style="font-size: 0.9rem; margin-top: 5px;">
+                                <i class="fas fa-database"></i> عدد القراءات المسجلة: <span id="recorded-readings">0</span>
+                            </p>
                         </div>
                         <div class="weather-icon">
-                            <i class="fas fa-sun" id="weather-icon"></i>
+                            <i class="fas fa-home" id="weather-icon"></i>
                         </div>
                     </div>
 
-                    <!-- Temperature Comparison -->
-                    <div class="temp-comparison">
-                        <h3 style="margin-bottom: 20px;">مقارنة درجة الحرارة</h3>
-                        
-                        <div class="temp-row">
-                            <div class="temp-label">
-                                <i class="fas fa-home"></i> درجة الحرارة الداخلية
-                            </div>
-                            <div class="temp-value" id="inside-temp-value">--°C</div>
+                    <!-- Smart Analysis -->
+                    <div class="analysis-card">
+                        <div class="analysis-header">
+                            <i class="fas fa-brain"></i>
+                            <h3>التحليل الذكي للقاعة</h3>
                         </div>
                         
-                        <div class="temp-row">
-                            <div class="temp-label">
-                                <i class="fas fa-cloud-sun"></i> درجة الحرارة الخارجية
+                        <div class="analysis-item">
+                            <div class="analysis-label">
+                                <i class="fas fa-fire"></i>
+                                تأثير المعازيم على الحرارة
                             </div>
-                            <div class="temp-value" id="outside-temp-value">--°C</div>
+                            <div class="analysis-value" id="temp-impact">--</div>
                         </div>
                         
-                        <div class="temp-row">
-                            <div class="temp-label">
-                                <i class="fas fa-tint"></i> الرطوبة الداخلية
+                        <div class="analysis-item">
+                            <div class="analysis-label">
+                                <i class="fas fa-tint"></i>
+                                تأثير المعازيم على الرطوبة
                             </div>
-                            <div class="temp-value" id="inside-humidity-value">--%</div>
+                            <div class="analysis-value" id="humidity-impact">--</div>
                         </div>
                         
-                        <div id="temperature-advice" class="temp-advice">
-                            جاري تحليل البيانات...
+                        <div class="analysis-item">
+                            <div class="analysis-label">
+                                <i class="fas fa-chart-line"></i>
+                                اتجاه تغير المناخ
+                            </div>
+                            <div class="analysis-value" id="climate-trend">--</div>
+                        </div>
+                        
+                        <div class="analysis-item">
+                            <div class="analysis-label">
+                                <i class="fas fa-history"></i>
+                                بيانات التحليل تعتمد على
+                            </div>
+                            <div class="analysis-value" id="data-samples">--</div>
+                        </div>
+                        
+                        <!-- Progress Bars for Impact -->
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>شدة تأثير المعازيم</span>
+                                <span id="occupancy-impact-level">--</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="occupancy-impact-bar" class="progress-fill" style="width: 0%"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Temperature History -->
-                    <div class="card" style="margin-top: 30px;">
+                    <!-- Recommendations -->
+                    <div class="analysis-card">
+                        <div class="analysis-header">
+                            <i class="fas fa-lightbulb"></i>
+                            <h3>التوصيات الذكية</h3>
+                        </div>
+                        
+                        <div id="temperature-recommendation" class="temp-advice advice-analysis">
+                            <i class="fas fa-spinner fa-spin"></i> جاري تحليل البيانات...
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <h4 style="margin-bottom: 15px; color: var(--dark-color);">توصيات مفصلة:</h4>
+                            <div id="detailed-recommendations">
+                                <p>1. تحميل بيانات القاعة...</p>
+                                <p>2. تحليل تأثير المعازيم...</p>
+                                <p>3. إنشاء توصيات مخصصة...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historical Data Summary -->
+                    <div class="card">
                         <div class="card-header">
-                            <h3>سجل درجات الحرارة</h3>
+                            <h3>ملخص البيانات التاريخية</h3>
+                            <button id="view-history" class="btn btn-outline btn-sm">
+                                <i class="fas fa-history"></i> عرض السجل الكامل
+                            </button>
                         </div>
-                        <div style="height: 300px; display: flex; align-items: center; justify-content: center; color: var(--gray-color);">
-                            <div style="text-align: center;">
-                                <i class="fas fa-chart-line" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                                <p>سيتم عرض رسم بياني لسجل درجات الحرارة هنا</p>
-                                <p style="font-size: 0.9rem;">(هذه الميزة تحت التطوير)</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>متوسط حرارة القاعة الفارغة</label>
+                                <div class="temp-value" id="avg-empty-temp">--°C</div>
                             </div>
+                            <div class="form-group">
+                                <label>متوسط رطوبة القاعة الفارغة</label>
+                                <div class="temp-value" id="avg-empty-humidity">--%</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>أعلى حرارة سجلت (مليئة)</label>
+                                <div class="temp-value" id="max-occupied-temp">--°C</div>
+                            </div>
+                            <div class="form-group">
+                                <label>أعلى رطوبة سجلت (مليئة)</label>
+                                <div class="temp-value" id="max-occupied-humidity">--%</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>عدد القراءات المسجلة</label>
+                                <div class="temp-value" id="total-samples">--</div>
+                            </div>
+                            <div class="form-group">
+                                <label>مدة التسجيل</label>
+                                <div class="temp-value" id="recording-duration">--</div>
+                            </div>
+                        </div>
+                        
+                        <!-- History Table -->
+                        <div class="history-table-container" style="display: none;" id="history-table-container">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>الوقت</th>
+                                        <th>درجة الحرارة</th>
+                                        <th>الرطوبة</th>
+                                        <th>حالة القاعة</th>
+                                        <th>عدد الضيوف</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body">
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -1415,14 +1725,6 @@
     
     <!-- Main Application Script -->
     <script>
-        // Firebase configuration
-        const IMGBB_API_KEY = 'df461154f7c611553040567379576ef5';
-        
-        // OpenWeatherMap API
-        const OPENWEATHER_API_KEY = 'c17b9ee4e7b86e46c6a4e79c6e3e5e3e';
-        const DEFAULT_CITY = 'Cairo';
-        const DEFAULT_COUNTRY = 'EG';
-        
         // Global variables
         let currentUser = null;
         let guests = [];
@@ -1433,6 +1735,11 @@
         let scannerCooldown = false;
         let cooldownTimer = 5;
         let cooldownInterval = null;
+        let weatherHistory = [];
+        let realTimeInterval = null;
+        let isRecording = false;
+        let recordingStartTime = null;
+        let lastAnalysisTime = 0;
         
         // Initialize the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
@@ -1453,8 +1760,15 @@
                     updateTime();
                     setInterval(updateTime, 1000);
                     
-                    // Load weather data
-                    updateWeatherData();
+                    // بدء التحديث التلقائي كل 2 ثانية
+                    startRealTimeUpdates();
+                    
+                    // تحميل وتحليل بيانات الطقس
+                    loadAndAnalyzeWeatherData();
+                    
+                    // تحميل البيانات التاريخية
+                    loadHistoricalData();
+                    
                 } else {
                     // User is signed out
                     showLogin();
@@ -1463,6 +1777,25 @@
             
             // Setup event listeners
             setupEventListeners();
+        }
+        
+        function startRealTimeUpdates() {
+            // إيقاف أي فاصل زمني سابق
+            if (realTimeInterval) {
+                clearInterval(realTimeInterval);
+            }
+            
+            // بدء التحديث التلقائي كل 2 ثانية
+            realTimeInterval = setInterval(() => {
+                // تحديث التحليل كل 2 ثانية فقط إذا كان قسم الطقس نشطاً
+                if (document.getElementById('weather').classList.contains('active')) {
+                    const now = Date.now();
+                    if (now - lastAnalysisTime > 2000) { // تحديث كل 2 ثانية
+                        lastAnalysisTime = now;
+                        updateRealTimeAnalysis();
+                    }
+                }
+            }, 2000); // 2000 مللي ثانية = 2 ثانية
         }
         
         function showToast(message, type = 'info') {
@@ -1562,6 +1895,13 @@
                             toggleScanner();
                         }
                     }
+                    
+                    // Refresh weather analysis when switching to weather section
+                    if (sectionId === 'weather') {
+                        setTimeout(() => {
+                            loadAndAnalyzeWeatherData();
+                        }, 300);
+                    }
                 });
             });
             
@@ -1631,7 +1971,7 @@
             document.getElementById('open-door-btn')?.addEventListener('click', () => openDoor());
             document.getElementById('close-door-btn')?.addEventListener('click', closeDoor);
             
-            // Light controls - تم التعديل هنا
+            // Light controls
             document.getElementById('quick-lights-on')?.addEventListener('click', turnOnAllLights);
             document.getElementById('quick-lights-off')?.addEventListener('click', turnOffAllLights);
             
@@ -1652,7 +1992,20 @@
             document.getElementById('refresh-status')?.addEventListener('click', refreshSystemStatus);
             
             // Weather refresh
-            document.getElementById('refresh-weather')?.addEventListener('click', updateWeatherData);
+            document.getElementById('refresh-weather')?.addEventListener('click', function() {
+                loadAndAnalyzeWeatherData();
+                loadHistoricalData();
+            });
+            
+            // Start recording
+            document.getElementById('start-recording')?.addEventListener('click', function() {
+                toggleRecording();
+            });
+            
+            // View history
+            document.getElementById('view-history')?.addEventListener('click', function() {
+                toggleHistoryTable();
+            });
             
             // QR modal
             document.getElementById('close-qr-modal')?.addEventListener('click', function() {
@@ -1796,6 +2149,43 @@
             });
             
             document.getElementById('total-guests').textContent = `${presentGuestCount}/${totalGuests}`;
+            
+            // تحديث حالة القاعة تلقائياً
+            updateHallStatus(presentGuestCount, totalGuests);
+        }
+        
+        function updateHallStatus(presentGuests, totalGuests) {
+            const hallStatusBadge = document.getElementById('hall-status-badge');
+            const currentGuestsDisplay = document.getElementById('current-guests-display');
+            
+            currentGuestsDisplay.textContent = `الضيوف الحاضرين: ${presentGuests}/${totalGuests}`;
+            
+            // تحديد حالة القاعة بناءً على نسبة الحضور
+            if (totalGuests === 0) {
+                hallStatusBadge.className = 'hall-status-badge hall-status-empty';
+                hallStatusBadge.innerHTML = '<i class="fas fa-users"></i> لا يوجد ضيوف';
+                return 'empty';
+            } else {
+                const occupancyRate = (presentGuests / totalGuests) * 100;
+                
+                if (occupancyRate >= 70) {
+                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
+                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة ممتلئة (${Math.round(occupancyRate)}%)`;
+                    return 'occupied';
+                } else if (occupancyRate >= 30) {
+                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
+                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة متوسطة (${Math.round(occupancyRate)}%)`;
+                    return 'occupied';
+                } else if (presentGuests > 0) {
+                    hallStatusBadge.className = 'hall-status-badge hall-status-occupied';
+                    hallStatusBadge.innerHTML = `<i class="fas fa-users"></i> قاعة قليلة (${Math.round(occupancyRate)}%)`;
+                    return 'occupied';
+                } else {
+                    hallStatusBadge.className = 'hall-status-badge hall-status-empty';
+                    hallStatusBadge.innerHTML = '<i class="fas fa-users"></i> قاعة فارغة';
+                    return 'empty';
+                }
+            }
         }
         
         function renderRecentGuests() {
@@ -2608,865 +2998,1346 @@
                 let scanTime = 'غير محدد';
                 if (record.scanTime) {
                     if (record.scanTime.toDate) {
-                        scanTime = record.scanTime.toDate().toLocaleString('ar-EG');
-                    } else if (record.scanTime.seconds) {
-                        scanTime = new Date(record.scanTime.seconds * 1000).toLocaleString('ar-EG');
-                    }
-                }
-                
-                data.push([
-                    guestName,
-                    individualCount,
-                    quickCode,
-                    record.qrData,
-                    record.entryNumber || 1,
-                    scanTime,
-                    record.doorOpened ? 'نعم' : 'لا',
-                    record.notes || ''
-                ]);
-            });
-            
-            // Create worksheet
-            const worksheet = XLSX.utils.aoa_to_sheet(data);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'الحضور');
-            
-            // Generate filename with current date
-            const dateStr = new Date().toISOString().split('T')[0];
-            const filename = `سجل_الحضور_${dateStr}.xlsx`;
-            
-            // Download file
-            XLSX.writeFile(workbook, filename);
-            showToast(`تم تصدير ${attendance.length} سجل حضور`, 'success');
-        }
-        
-        function toggleScanner() {
-            const toggleBtn = document.getElementById('toggle-scanner');
-            const scannerContainer = document.getElementById('scanner-container');
-            const scannerPlaceholder = document.getElementById('scanner-placeholder');
-            const scannerResult = document.getElementById('scanner-result');
-            
-            if (!scannerActive) {
-                // Start scanner
-                startScanner();
-                toggleBtn.innerHTML = '<i class="fas fa-stop"></i> إيقاف الماسح';
-                scannerContainer.style.display = 'block';
-                scannerPlaceholder.style.display = 'none';
-                scannerResult.style.display = 'none';
-                scannerActive = true;
-                
-                // Reset cooldown
-                scannerCooldown = false;
-                document.getElementById('cooldown-indicator').style.display = 'none';
-            } else {
-                // Stop scanner
-                stopScanner();
-                toggleBtn.innerHTML = '<i class="fas fa-camera"></i> تشغيل الماسح';
-                scannerContainer.style.display = 'none';
-                scannerPlaceholder.style.display = 'block';
-                scannerActive = false;
-                
-                // Clear cooldown
-                if (cooldownInterval) {
-                    clearInterval(cooldownInterval);
-                    cooldownInterval = null;
-                }
-                document.getElementById('cooldown-indicator').style.display = 'none';
-            }
-        }
-        
-        function startScanner() {
-            navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                } 
-            })
-            .then(stream => {
-                videoStream = stream;
-                const video = document.getElementById('qr-video');
-                video.srcObject = stream;
-                video.play();
-                
-                // Start QR scanning
-                qrScannerInterval = setInterval(scanQRCode, 500);
-            })
-            .catch(error => {
-                console.error('Error accessing camera:', error);
-                showToast('تعذر الوصول إلى الكاميرا. تأكد من السماح باستخدام الكاميرا.', 'error');
-                
-                // Reset scanner state
-                const toggleBtn = document.getElementById('toggle-scanner');
-                const scannerContainer = document.getElementById('scanner-container');
-                const scannerPlaceholder = document.getElementById('scanner-placeholder');
-                
-                toggleBtn.innerHTML = '<i class="fas fa-camera"></i> تشغيل الماسح';
-                scannerContainer.style.display = 'none';
-                scannerPlaceholder.style.display = 'block';
-                scannerActive = false;
-            });
-        }
-        
-        function stopScanner() {
-            if (qrScannerInterval) {
-                clearInterval(qrScannerInterval);
-                qrScannerInterval = null;
-            }
-            
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            
-            const video = document.getElementById('qr-video');
-            video.srcObject = null;
-        }
-        
-        function startScannerCooldown() {
-            scannerCooldown = true;
-            cooldownTimer = 5;
-            
-            // Show cooldown indicator
-            const indicator = document.getElementById('cooldown-indicator');
-            const timerElement = document.getElementById('cooldown-timer');
-            indicator.style.display = 'block';
-            timerElement.textContent = cooldownTimer;
-            
-            // Stop scanner temporarily
-            if (qrScannerInterval) {
-                clearInterval(qrScannerInterval);
-                qrScannerInterval = null;
-            }
-            
-            // Start cooldown countdown
-            cooldownInterval = setInterval(() => {
-                cooldownTimer--;
-                timerElement.textContent = cooldownTimer;
-                
-                if (cooldownTimer <= 0) {
-                    // Cooldown finished
-                    clearInterval(cooldownInterval);
-                    cooldownInterval = null;
-                    scannerCooldown = false;
-                    indicator.style.display = 'none';
-                    
-                    // Restart scanner if still active
-                    if (scannerActive) {
-                        qrScannerInterval = setInterval(scanQRCode, 500);
-                    }
-                }
-            }, 1000);
-        }
-        
-        function scanQRCode() {
-            // Skip scanning if in cooldown
-            if (scannerCooldown) return;
-            
-            const video = document.getElementById('qr-video');
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                
-                if (code) {
-                    // QR code found
-                    handleScannedQR(code.data);
-                }
-            }
-        }
-        
-        async function handleScannedQR(qrData) {
-            // Stop scanner temporarily and start cooldown
-            startScannerCooldown();
-            
-            // Find guest by QR data or quick code
-            let guest = guests.find(g => g.qrData === qrData);
-            
-            // If not found by QR data, try to find by quick code
-            if (!guest) {
-                guest = guests.find(g => g.quickCode === qrData);
-            }
-            
-            const scannerResult = document.getElementById('scanner-result');
-            const guestName = document.getElementById('scan-guest-name');
-            const scanMessage = document.getElementById('scan-message');
-            const scanDetails = document.getElementById('scan-details');
-            
-            if (guest) {
-                // Valid guest
-                guestName.textContent = `مرحباً ${guest.name}!`;
-                scanMessage.textContent = `تم التعرف على QR بنجاح - عدد الأفراد: ${guest.individualCount || 1}`;
-                scanMessage.style.color = 'var(--success-color)';
-                
-                // حساب عدد مرات الدخول السابقة
-                const previousEntries = attendance.filter(a => a.qrData === guest.qrData);
-                const entryCount = previousEntries.length + 1;
-                
-                scanDetails.innerHTML = `
-                    <p><strong>اسم الضيف:</strong> ${guest.name}</p>
-                    <p><strong>عدد الأفراد:</strong> ${guest.individualCount || 1}</p>
-                    <p><strong>عدد مرات الدخول:</strong> ${entryCount}</p>
-                    ${previousEntries.length > 0 ? 
-                        `<p><strong>آخر دخول:</strong> ${formatDate(previousEntries[0].scanTime)}</p>` : 
-                        ''}
-                    <div style="margin-top: 20px;">
-                        <button id="open-door-for-guest" class="btn btn-success">
-                            <i class="fas fa-door-open"></i> فتح الباب للضيف (${guest.individualCount || 1} فرد)
-                        </button>
-                    </div>
-                `;
-                
-                // حفظ سجل الحضور
-                await saveAttendanceRecord(guest, entryCount);
-                
-                // فتح الباب تلقائياً
-                openDoorForGuest(guest.name, guest.individualCount || 1);
-                
-                // إضافة مستمع الحدث لزر فتح الباب (تجاوز يدوي)
-                setTimeout(() => {
-                    document.getElementById('open-door-for-guest')?.addEventListener('click', () => {
-                        openDoorForGuest(guest.name, guest.individualCount || 1);
-                    });
-                }, 100);
-                
-            } else {
-                // QR غير صالح
-                guestName.textContent = 'لم يتم التعرف على QR';
-                scanMessage.textContent = 'رمز QR أو الرمز السريع غير صالح أو غير مسجل في النظام';
-                scanMessage.style.color = 'var(--danger-color)';
-                
-                scanDetails.innerHTML = `
-                    <p>يرجى التحقق من الرمز والمحاولة مرة أخرى</p>
-                    <p>سيتمكن الماسح من المسح مرة أخرى خلال 5 ثوانٍ</p>
-                    <div style="margin-top: 20px;">
-                        <button id="retry-scan" class="btn btn-outline">
-                            <i class="fas fa-redo"></i> المحاولة مرة أخرى
-                        </button>
-                    </div>
-                `;
-                
-                // إرسال أمر إلى ESP8266 لعرض خطأ على شاشة LCD
-                sendESPCommand('LCD_ERROR');
-                
-                // إضافة مستمع الحدث لزر المحاولة مرة أخرى
-                setTimeout(() => {
-                    document.getElementById('retry-scan')?.addEventListener('click', () => {
-                        scanDetails.innerHTML = '';
-                        // تم بدء التبريد بالفعل، لا حاجة لإعادة تشغيل الماسح هنا
-                    });
-                }, 100);
-            }
-            
-            // عرض النتيجة
-            scannerResult.style.display = 'block';
-        }
-        
-        async function saveAttendanceRecord(guest, entryCount) {
-            try {
-                const attendanceData = {
-                    guestId: guest.id,
-                    guestName: guest.name,
-                    individualCount: guest.individualCount || 1,
-                    quickCode: guest.quickCode,
-                    qrData: guest.qrData,
-                    scanTime: window.firebase.serverTimestamp(),
-                    entryNumber: entryCount,
-                    doorOpened: true,
-                    notes: entryCount > 1 ? `الدخول رقم ${entryCount}` : 'أول دخول'
-                };
-                
-                await window.firebase.addDoc(
-                    window.firebase.collection(window.firebase.db, 'attendance'),
-                    attendanceData
-                );
-                
-                // إعادة تحميل سجلات الحضور
-                loadAttendance();
-                
-            } catch (error) {
-                console.error('Error saving attendance:', error);
-            }
-        }
-        
-        function formatDate(dateObj) {
-            if (!dateObj) return 'غير محدد';
-            
-            try {
-                if (dateObj.toDate) {
-                    return dateObj.toDate().toLocaleString('ar-EG');
-                } else if (dateObj.seconds) {
-                    return new Date(dateObj.seconds * 1000).toLocaleString('ar-EG');
-                } else {
-                    return 'غير محدد';
-                }
-            } catch (error) {
-                return 'غير محدد';
-            }
-        }
-        
-        function openDoorForGuest(guestName, individualCount) {
-            // Update UI
-            document.getElementById('door-control-status').className = 'control-status status-on';
-            document.getElementById('door-control-status').textContent = 'مفتوح';
-            document.getElementById('door-status').textContent = 'مفتوح';
-            
-            document.getElementById('open-door-btn').disabled = true;
-            document.getElementById('close-door-btn').disabled = false;
-            
-            // Send command to ESP8266 to open door
-            sendESPCommand('DOOR_OPEN');
-            
-            showToast(`تم فتح الباب لـ ${guestName} (${individualCount} فرد)`, 'success');
-            
-            // Auto close after 10 seconds
-            setTimeout(() => {
-                closeDoor();
-            }, 10000);
-        }
-        
-        function checkManualQR() {
-            const manualQR = document.getElementById('manual-qr').value.trim();
-            
-            if (!manualQR) {
-                showToast('يرجى إدخال رمز QR أو الرمز السريع يدويًا', 'warning');
-                return;
-            }
-            
-            // Simulate scanning the manual QR/quick code
-            handleScannedQR(manualQR);
-        }
-        
-        function openDoor() {
-            // Update UI
-            document.getElementById('door-control-status').className = 'control-status status-on';
-            document.getElementById('door-control-status').textContent = 'مفتوح';
-            document.getElementById('door-status').textContent = 'مفتوح';
-            
-            document.getElementById('open-door-btn').disabled = true;
-            document.getElementById('close-door-btn').disabled = false;
-            
-            // Send command to ESP8266
-            sendESPCommand('DOOR_OPEN');
-            
-            showToast('تم إرسال أمر فتح الباب', 'success');
-            
-            // Auto close after 10 seconds
-            setTimeout(() => {
-                closeDoor();
-            }, 10000);
-        }
-        
-        function closeDoor() {
-            // Update UI
-            document.getElementById('door-control-status').className = 'control-status status-off';
-            document.getElementById('door-control-status').textContent = 'مغلق';
-            document.getElementById('door-status').textContent = 'مغلق';
-            
-            document.getElementById('open-door-btn').disabled = false;
-            document.getElementById('close-door-btn').disabled = true;
-            
-            // Send command to ESP8266
-            sendESPCommand('DOOR_CLOSE');
-            
-            showToast('تم إرسال أمر إغلاق الباب', 'success');
-        }
-        
-        // ==================== وظائف التحكم في الإضاءة المحدثة ====================
-        
-        function toggleLight(lightNumber, turnOn) {
-            const statusElement = document.getElementById(`light${lightNumber}-control-status`);
-            const onBtn = document.getElementById(`light${lightNumber}-on-btn`);
-            const offBtn = document.getElementById(`light${lightNumber}-off-btn`);
-            
-            if (turnOn) {
-                statusElement.className = 'control-status status-on';
-                statusElement.textContent = 'مشغلة';
-                onBtn.disabled = true;
-                offBtn.disabled = false;
-                
-                // تحديث Firebase مباشرة
-                updateLightStatusInFirebase(lightNumber, true);
-                
-                // إرسال أمر إلى ESP8266
-                sendESPCommand(`LIGHT${lightNumber}_ON`);
-                
-                showToast(`تم تشغيل الإضاءة ${lightNumber}`, 'success');
-            } else {
-                statusElement.className = 'control-status status-off';
-                statusElement.textContent = 'مطفأة';
-                onBtn.disabled = false;
-                offBtn.disabled = true;
-                
-                // تحديث Firebase مباشرة
-                updateLightStatusInFirebase(lightNumber, false);
-                
-                // إرسال أمر إلى ESP8266
-                sendESPCommand(`LIGHT${lightNumber}_OFF`);
-                
-                showToast(`تم إطفاء الإضاءة ${lightNumber}`, 'success');
-            }
-            
-            // تحديث حالة الأنوار الكلية
-            updateLightsStatus();
-        }
-        
-        function updateLightStatusInFirebase(lightNumber, isOn) {
-            if (window.firebase && window.firebase.rtdb) {
-                const path = `/devices/light${lightNumber}/status`;
-                window.firebase.set(window.firebase.ref(window.firebase.rtdb, path), isOn)
-                    .then(() => {
-                        console.log(`Light ${lightNumber} status updated in Firebase: ${isOn}`);
-                        
-                        // تحديث الوقت أيضاً
-                        const timePath = `/devices/light${lightNumber}/lastChange`;
-                        window.firebase.set(window.firebase.ref(window.firebase.rtdb, timePath), Date.now());
-                    })
-                    .catch(error => {
-                        console.error(`Error updating light ${lightNumber} status:`, error);
-                    });
-            }
-        }
-        
-        // ==================== دالة تشغيل كل الأنوار ====================
-        function turnOnAllLights() {
-            console.log("تشغيل جميع الأنوار...");
-            
-            // تحديث حالة الأضواء في Firebase مباشرة
-            updateLightStatusInFirebase(1, true);
-            updateLightStatusInFirebase(2, true);
-            
-            // إرسال أمر مباشر إلى ESP8266
-            sendESPCommand('ALL_LIGHTS_ON');
-            
-            // تحديث واجهة المستخدم فوراً
-            setTimeout(() => {
-                document.getElementById('light1-control-status').className = 'control-status status-on';
-                document.getElementById('light1-control-status').textContent = 'مشغلة';
-                document.getElementById('light1-on-btn').disabled = true;
-                document.getElementById('light1-off-btn').disabled = false;
-                
-                document.getElementById('light2-control-status').className = 'control-status status-on';
-                document.getElementById('light2-control-status').textContent = 'مشغلة';
-                document.getElementById('light2-on-btn').disabled = true;
-                document.getElementById('light2-off-btn').disabled = false;
-                
-                document.getElementById('lights-status').textContent = 'مشغلة';
-            }, 300);
-            
-            showToast('تم تشغيل جميع الأنوار', 'success');
-        }
-        
-        // ==================== دالة إطفاء كل الأنوار ====================
-        function turnOffAllLights() {
-            console.log("إطفاء جميع الأنوار...");
-            
-            // تحديث حالة الأضواء في Firebase مباشرة
-            updateLightStatusInFirebase(1, false);
-            updateLightStatusInFirebase(2, false);
-            
-            // إرسال أمر مباشر إلى ESP8266
-            sendESPCommand('ALL_LIGHTS_OFF');
-            
-            // تحديث واجهة المستخدم فوراً
-            setTimeout(() => {
-                document.getElementById('light1-control-status').className = 'control-status status-off';
-                document.getElementById('light1-control-status').textContent = 'مطفأة';
-                document.getElementById('light1-on-btn').disabled = false;
-                document.getElementById('light1-off-btn').disabled = true;
-                
-                document.getElementById('light2-control-status').className = 'control-status status-off';
-                document.getElementById('light2-control-status').textContent = 'مطفأة';
-                document.getElementById('light2-on-btn').disabled = false;
-                document.getElementById('light2-off-btn').disabled = true;
-                
-                document.getElementById('lights-status').textContent = 'مطفأة';
-            }, 300);
-            
-            showToast('تم إطفاء جميع الأنوار', 'success');
-        }
-        
-        function updateLightsStatus() {
-            const light1Status = document.getElementById('light1-control-status').textContent;
-            const light2Status = document.getElementById('light2-control-status').textContent;
-            
-            if (light1Status === 'مشغلة' || light2Status === 'مشغلة') {
-                document.getElementById('lights-status').textContent = 'مشغلة';
-            } else {
-                document.getElementById('lights-status').textContent = 'مطفأة';
-            }
-        }
-        
-        function sendESPCommand(command) {
-            console.log(`Sending command to ESP8266: ${command}`);
-            
-            // تحديث Firebase Realtime Database مع الأمر
-            window.firebase.set(window.firebase.ref(window.firebase.rtdb, 'commands/latest'), {
-                command: command,
-                timestamp: Date.now(),
-                executed: false
-            })
-            .then(() => {
-                console.log(`Command ${command} sent to Firebase`);
-                
-                // تحديث وقت آخر تحديث
-                document.getElementById('last-update').textContent = 'الآن';
-                showToast(`تم إرسال الأمر: ${command}`, 'success');
-            })
-            .catch(error => {
-                console.error('Error sending command:', error);
-                showToast('تعذر إرسال الأمر إلى ESP8266', 'error');
-            });
-        }
-        
-        function refreshSystemStatus() {
-            document.getElementById('last-update').textContent = 'الآن';
-            showToast('تم تحديث حالة النظام', 'success');
-        }
-        
-        async function updateWeatherData() {
-            try {
-                // Update loading state
-                document.getElementById('weather-description').textContent = 'جاري تحميل بيانات الطقس...';
-                document.getElementById('outside-temp').textContent = '--°C';
-                document.getElementById('outside-temp-value').textContent = '--°C';
-                
-                // Get weather data from OpenWeatherMap API
-                const weatherData = await getWeatherData();
-                
-                if (weatherData) {
-                    const tempCelsius = Math.round(weatherData.main.temp - 273.15); // Convert from Kelvin to Celsius
-                    const description = weatherData.weather[0].description;
-                    const city = weatherData.name;
-                    const country = weatherData.sys.country;
-                    
-                    // Update UI with real data
-                    document.getElementById('outside-temp').textContent = `${tempCelsius}°C`;
-                    document.getElementById('outside-temp-value').textContent = `${tempCelsius}°C`;
-                    document.getElementById('weather-description').textContent = description;
-                    document.getElementById('weather-location').textContent = `${city}, ${country}`;
-                    
-                    // Set appropriate icon
-                    const weatherIcon = document.getElementById('weather-icon');
-                    const weatherId = weatherData.weather[0].id;
-                    
-                    if (weatherId >= 200 && weatherId < 300) {
-                        weatherIcon.className = 'fas fa-bolt'; // Thunderstorm
-                    } else if (weatherId >= 300 && weatherId < 500) {
-                        weatherIcon.className = 'fas fa-cloud-rain'; // Drizzle/Rain
-                    } else if (weatherId >= 500 && weatherId < 600) {
-                        weatherIcon.className = 'fas fa-cloud-showers-heavy'; // Rain
-                    } else if (weatherId >= 600 && weatherId < 700) {
-                        weatherIcon.className = 'fas fa-snowflake'; // Snow
-                    } else if (weatherId >= 700 && weatherId < 800) {
-                        weatherIcon.className = 'fas fa-smog'; // Atmosphere
-                    } else if (weatherId === 800) {
-                        weatherIcon.className = 'fas fa-sun'; // Clear
-                    } else if (weatherId > 800) {
-                        weatherIcon.className = 'fas fa-cloud'; // Clouds
-                    }
-                    
-                    // Get indoor temperature from Firebase (from ESP8266)
-                    const tempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature');
-                    window.firebase.onValue(tempRef, (snapshot) => {
-                        const indoorData = snapshot.val();
-                        if (indoorData) {
-                            const indoorTemp = indoorData.value || 22; // Default if not available
+                                        scanTime = record.scanTime.toDate().toLocaleString('ar-EG');
+                                    } else if (record.scanTime.seconds) {
+                                        scanTime = new Date(record.scanTime.seconds * 1000).toLocaleString('ar-EG');
+                                    }
+                                }
+                                
+                                data.push([
+                                    guestName,
+                                    individualCount,
+                                    quickCode,
+                                    record.qrData,
+                                    record.entryNumber || 1,
+                                    scanTime,
+                                    record.doorOpened ? 'نعم' : 'لا',
+                                    record.notes || ''
+                                ]);
+                            });
                             
-                            // Update indoor temperature
-                            document.getElementById('current-temp').textContent = `${indoorTemp}°C`;
-                            document.getElementById('inside-temp-value').textContent = `${indoorTemp}°C`;
+                            // Create worksheet
+                            const worksheet = XLSX.utils.aoa_to_sheet(data);
+                            const workbook = XLSX.utils.book_new();
+                            XLSX.utils.book_append_sheet(workbook, worksheet, 'الحضور');
                             
-                            // Update advice based on temperature comparison
-                            updateTemperatureAdvice(indoorTemp, tempCelsius);
-                        } else {
-                            // Use default values if no sensor data
-                            const defaultIndoorTemp = 24;
-                            document.getElementById('current-temp').textContent = `${defaultIndoorTemp}°C`;
-                            document.getElementById('inside-temp-value').textContent = `${defaultIndoorTemp}°C`;
-                            updateTemperatureAdvice(defaultIndoorTemp, tempCelsius);
+                            // Generate filename with current date
+                            const dateStr = new Date().toISOString().split('T')[0];
+                            const filename = `سجل_الحضور_${dateStr}.xlsx`;
+                            
+                            // Download file
+                            XLSX.writeFile(workbook, filename);
+                            showToast(`تم تصدير ${attendance.length} سجل حضور`, 'success');
                         }
-                    }, { onlyOnce: true });
-                    
-                    // Get indoor humidity from Firebase
-                    const humidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity');
-                    window.firebase.onValue(humidityRef, (snapshot) => {
-                        const humidityData = snapshot.val();
-                        if (humidityData) {
-                            document.getElementById('inside-humidity-value').textContent = `${humidityData.value}%`;
-                        }
-                    }, { onlyOnce: true });
-                    
-                    showToast('تم تحديث بيانات الطقس بنجاح', 'success');
-                } else {
-                    throw new Error('لا توجد بيانات طقس');
-                }
-                
-            } catch (error) {
-                console.error('Error updating weather:', error);
-                
-                // Use fallback data if API fails
-                const fallbackTemp = 25;
-                document.getElementById('outside-temp').textContent = `${fallbackTemp}°C`;
-                document.getElementById('outside-temp-value').textContent = `${fallbackTemp}°C`;
-                document.getElementById('weather-description').textContent = 'مشمس';
-                document.getElementById('weather-location').textContent = 'القاهرة، مصر';
-                document.getElementById('weather-icon').className = 'fas fa-sun';
-                
-                // Default indoor values
-                const defaultIndoorTemp = 24;
-                document.getElementById('current-temp').textContent = `${defaultIndoorTemp}°C`;
-                document.getElementById('inside-temp-value').textContent = `${defaultIndoorTemp}°C`;
-                document.getElementById('inside-humidity-value').textContent = '50%';
-                
-                updateTemperatureAdvice(defaultIndoorTemp, fallbackTemp);
-                
-                showToast('تم استخدام بيانات الطقس الافتراضية', 'warning');
-            }
-        }
-        
-        async function getWeatherData() {
-            try {
-                // Try to get user's location
-                let city = DEFAULT_CITY;
-                let country = DEFAULT_COUNTRY;
-                
-                // First try to get precise location
-                const position = await new Promise((resolve, reject) => {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
-                            timeout: 5000,
-                            maximumAge: 60000
-                        });
-                    } else {
-                        reject(new Error('Geolocation not supported'));
-                    }
-                });
-                
-                if (position) {
-                    // Use reverse geocoding to get city name from coordinates
-                    const { latitude, longitude } = position.coords;
-                    const reverseGeocodeUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${OPENWEATHER_API_KEY}`;
-                    
-                    const reverseResponse = await fetch(reverseGeocodeUrl);
-                    const reverseData = await reverseResponse.json();
-                    
-                    if (reverseData && reverseData.length > 0) {
-                        city = reverseData[0].name;
-                        country = reverseData[0].country;
-                    }
-                }
-                
-                // Get weather data
-                const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${OPENWEATHER_API_KEY}`;
-                const response = await fetch(weatherUrl);
-                
-                if (!response.ok) {
-                    throw new Error(`Weather API error: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                return data;
-                
-            } catch (error) {
-                console.warn('Error getting precise location or weather data:', error);
-                
-                // Fallback to default city
-                try {
-                    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${DEFAULT_CITY},${DEFAULT_COUNTRY}&appid=${OPENWEATHER_API_KEY}`;
-                    const response = await fetch(weatherUrl);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data;
-                    } else {
-                        // If OpenWeatherMap fails, try a fallback API
-                        return getFallbackWeatherData();
-                    }
-                } catch (fallbackError) {
-                    console.error('Fallback weather API also failed:', fallbackError);
-                    return null;
-                }
-            }
-        }
-        
-        async function getFallbackWeatherData() {
-            // Try a different weather API as fallback
-            try {
-                // Using a free weather API alternative
-                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=30.0444&longitude=31.2357&current_weather=true`);
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Transform data to match our expected format
-                    return {
-                        main: {
-                            temp: data.current_weather.temperature + 273.15 // Convert to Kelvin
-                        },
-                        weather: [{
-                            description: 'مشمس',
-                            id: 800
-                        }],
-                        name: 'القاهرة',
-                        sys: {
-                            country: 'مصر'
-                        }
-                    };
-                }
-            } catch (error) {
-                console.error('Fallback weather API failed:', error);
-            }
-            
-            return null;
-        }
-        
-        function updateTemperatureAdvice(indoorTemp, outdoorTemp) {
-            const adviceElement = document.getElementById('temperature-advice');
-            const tempDifference = indoorTemp - outdoorTemp;
-            
-            if (indoorTemp > 28) {
-                adviceElement.className = 'temp-advice advice-hot';
-                adviceElement.innerHTML = '<i class="fas fa-fire"></i> الجو حار جداً – قلل التكييف';
-            } else if (indoorTemp < 20) {
-                adviceElement.className = 'temp-advice advice-cold';
-                adviceElement.innerHTML = '<i class="fas fa-snowflake"></i> الجو بارد – زد التكييف';
-            } else if (tempDifference > 5) {
-                adviceElement.className = 'temp-advice advice-cold';
-                adviceElement.innerHTML = '<i class="fas fa-thermometer-empty"></i> الفرق كبير – قلل التكييف';
-            } else if (tempDifference < -5) {
-                adviceElement.className = 'temp-advice advice-hot';
-                adviceElement.innerHTML = '<i class="fas fa-thermometer-full"></i> الخارج حار – زد التكييف';
-            } else {
-                adviceElement.className = 'temp-advice advice-good';
-                adviceElement.innerHTML = '<i class="fas fa-thumbs-up"></i> درجة الحرارة مناسبة – حالة ممتازة';
-            }
-        }
-        
-        function setupRealtimeListeners() {
-            // Listen for temperature updates from ESP8266
-            const tempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature');
-            window.firebase.onValue(tempRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.value !== undefined) {
-                    const tempValue = parseFloat(data.value);
-                    document.getElementById('current-temp').textContent = `${tempValue}°C`;
-                    document.getElementById('inside-temp-value').textContent = `${tempValue}°C`;
-                    
-                    // Update advice if we have outdoor temp
-                    const outdoorTempElem = document.getElementById('outside-temp-value');
-                    if (outdoorTempElem && outdoorTempElem.textContent !== '--°C') {
-                        const outdoorTemp = parseFloat(outdoorTempElem.textContent);
-                        updateTemperatureAdvice(tempValue, outdoorTemp);
-                    }
-                    
-                    // Update last update time
-                    document.getElementById('last-update').textContent = 'قبل قليل';
-                }
-            });
-            
-            // Listen for humidity updates
-            const humidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity');
-            window.firebase.onValue(humidityRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.value !== undefined) {
-                    document.getElementById('inside-humidity-value').textContent = `${data.value}%`;
-                }
-            });
-            
-            // Listen for door status
-            const doorRef = window.firebase.ref(window.firebase.rtdb, 'devices/door');
-            window.firebase.onValue(doorRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const isOpen = data.status === 'open' || data.status === true;
-                    
-                    document.getElementById('door-status').textContent = isOpen ? 'مفتوح' : 'مغلق';
-                    
-                    const doorControlStatus = document.getElementById('door-control-status');
-                    if (isOpen) {
-                        doorControlStatus.className = 'control-status status-on';
-                        doorControlStatus.textContent = 'مفتوح';
                         
-                        document.getElementById('open-door-btn').disabled = true;
-                        document.getElementById('close-door-btn').disabled = false;
-                    } else {
-                        doorControlStatus.className = 'control-status status-off';
-                        doorControlStatus.textContent = 'مغلق';
+                        function toggleScanner() {
+                            const toggleBtn = document.getElementById('toggle-scanner');
+                            const scannerContainer = document.getElementById('scanner-container');
+                            const scannerPlaceholder = document.getElementById('scanner-placeholder');
+                            const scannerResult = document.getElementById('scanner-result');
+                            
+                            if (!scannerActive) {
+                                // Start scanner
+                                startScanner();
+                                toggleBtn.innerHTML = '<i class="fas fa-stop"></i> إيقاف الماسح';
+                                scannerContainer.style.display = 'block';
+                                scannerPlaceholder.style.display = 'none';
+                                scannerResult.style.display = 'none';
+                                scannerActive = true;
+                                
+                                // Reset cooldown
+                                scannerCooldown = false;
+                                document.getElementById('cooldown-indicator').style.display = 'none';
+                            } else {
+                                // Stop scanner
+                                stopScanner();
+                                toggleBtn.innerHTML = '<i class="fas fa-camera"></i> تشغيل الماسح';
+                                scannerContainer.style.display = 'none';
+                                scannerPlaceholder.style.display = 'block';
+                                scannerActive = false;
+                                
+                                // Clear cooldown
+                                if (cooldownInterval) {
+                                    clearInterval(cooldownInterval);
+                                    cooldownInterval = null;
+                                }
+                                document.getElementById('cooldown-indicator').style.display = 'none';
+                            }
+                        }
                         
-                        document.getElementById('open-door-btn').disabled = false;
-                        document.getElementById('close-door-btn').disabled = true;
-                    }
-                }
-            });
-            
-            // Listen for light status
-            const light1Ref = window.firebase.ref(window.firebase.rtdb, 'devices/light1');
-            window.firebase.onValue(light1Ref, (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const isOn = data.status === 'on' || data.status === true;
-                    
-                    const statusElement = document.getElementById('light1-control-status');
-                    if (isOn) {
-                        statusElement.className = 'control-status status-on';
-                        statusElement.textContent = 'مشغلة';
-                        document.getElementById('light1-on-btn').disabled = true;
-                        document.getElementById('light1-off-btn').disabled = false;
-                    } else {
-                        statusElement.className = 'control-status status-off';
-                        statusElement.textContent = 'مطفأة';
-                        document.getElementById('light1-on-btn').disabled = false;
-                        document.getElementById('light1-off-btn').disabled = true;
-                    }
-                    
-                    updateLightsStatus();
-                }
-            });
-            
-            const light2Ref = window.firebase.ref(window.firebase.rtdb, 'devices/light2');
-            window.firebase.onValue(light2Ref, (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const isOn = data.status === 'on' || data.status === true;
-                    
-                    const statusElement = document.getElementById('light2-control-status');
-                    if (isOn) {
-                        statusElement.className = 'control-status status-on';
-                        statusElement.textContent = 'مشغلة';
-                        document.getElementById('light2-on-btn').disabled = true;
-                        document.getElementById('light2-off-btn').disabled = false;
-                    } else {
-                        statusElement.className = 'control-status status-off';
-                        statusElement.textContent = 'مطفأة';
-                        document.getElementById('light2-on-btn').disabled = false;
-                        document.getElementById('light2-off-btn').disabled = true;
-                    }
-                    
-                    updateLightsStatus();
-                }
-            });
-            
-            // Update ESP connection status
-            const espRef = window.firebase.ref(window.firebase.rtdb, 'system/espConnected');
-            window.firebase.onValue(espRef, (snapshot) => {
-                const isConnected = snapshot.val();
-                const espStatus = document.getElementById('esp-status');
-                
-                if (isConnected) {
-                    espStatus.textContent = 'متصل';
-                    espStatus.style.color = 'var(--success-color)';
-                } else {
-                    espStatus.textContent = 'غير متصل';
-                    espStatus.style.color = 'var(--danger-color)';
-                }
-            });
-        }
-    </script>
-</body>
-</html>
+                        function startScanner() {
+                            navigator.mediaDevices.getUserMedia({ 
+                                video: { 
+                                    facingMode: 'environment',
+                                    width: { ideal: 1280 },
+                                    height: { ideal: 720 }
+                                } 
+                            })
+                            .then(stream => {
+                                videoStream = stream;
+                                const video = document.getElementById('qr-video');
+                                video.srcObject = stream;
+                                video.play();
+                                
+                                // Start QR scanning
+                                qrScannerInterval = setInterval(scanQRCode, 500);
+                            })
+                            .catch(error => {
+                                console.error('Error accessing camera:', error);
+                                showToast('تعذر الوصول إلى الكاميرا. تأكد من السماح باستخدام الكاميرا.', 'error');
+                                
+                                // Reset scanner state
+                                const toggleBtn = document.getElementById('toggle-scanner');
+                                const scannerContainer = document.getElementById('scanner-container');
+                                const scannerPlaceholder = document.getElementById('scanner-placeholder');
+                                
+                                toggleBtn.innerHTML = '<i class="fas fa-camera"></i> تشغيل الماسح';
+                                scannerContainer.style.display = 'none';
+                                scannerPlaceholder.style.display = 'block';
+                                scannerActive = false;
+                            });
+                        }
+                        
+                        function stopScanner() {
+                            if (qrScannerInterval) {
+                                clearInterval(qrScannerInterval);
+                                qrScannerInterval = null;
+                            }
+                            
+                            if (videoStream) {
+                                videoStream.getTracks().forEach(track => track.stop());
+                                videoStream = null;
+                            }
+                            
+                            const video = document.getElementById('qr-video');
+                            video.srcObject = null;
+                        }
+                        
+                        function startScannerCooldown() {
+                            scannerCooldown = true;
+                            cooldownTimer = 5;
+                            
+                            // Show cooldown indicator
+                            const indicator = document.getElementById('cooldown-indicator');
+                            const timerElement = document.getElementById('cooldown-timer');
+                            indicator.style.display = 'block';
+                            timerElement.textContent = cooldownTimer;
+                            
+                            // Stop scanner temporarily
+                            if (qrScannerInterval) {
+                                clearInterval(qrScannerInterval);
+                                qrScannerInterval = null;
+                            }
+                            
+                            // Start cooldown countdown
+                            cooldownInterval = setInterval(() => {
+                                cooldownTimer--;
+                                timerElement.textContent = cooldownTimer;
+                                
+                                if (cooldownTimer <= 0) {
+                                    // Cooldown finished
+                                    clearInterval(cooldownInterval);
+                                    cooldownInterval = null;
+                                    scannerCooldown = false;
+                                    indicator.style.display = 'none';
+                                    
+                                    // Restart scanner if still active
+                                    if (scannerActive) {
+                                        qrScannerInterval = setInterval(scanQRCode, 500);
+                                    }
+                                }
+                            }, 1000);
+                        }
+                        
+                        function scanQRCode() {
+                            // Skip scanning if in cooldown
+                            if (scannerCooldown) return;
+                            
+                            const video = document.getElementById('qr-video');
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            
+                            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                                canvas.width = video.videoWidth;
+                                canvas.height = video.videoHeight;
+                                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                
+                                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                                
+                                if (code) {
+                                    // QR code found
+                                    handleScannedQR(code.data);
+                                }
+                            }
+                        }
+                        
+                        async function handleScannedQR(qrData) {
+                            // Stop scanner temporarily and start cooldown
+                            startScannerCooldown();
+                            
+                            // Find guest by QR data or quick code
+                            let guest = guests.find(g => g.qrData === qrData);
+                            
+                            // If not found by QR data, try to find by quick code
+                            if (!guest) {
+                                guest = guests.find(g => g.quickCode === qrData);
+                            }
+                            
+                            const scannerResult = document.getElementById('scanner-result');
+                            const guestName = document.getElementById('scan-guest-name');
+                            const scanMessage = document.getElementById('scan-message');
+                            const scanDetails = document.getElementById('scan-details');
+                            
+                            if (guest) {
+                                // Valid guest
+                                guestName.textContent = `مرحباً ${guest.name}!`;
+                                scanMessage.textContent = `تم التعرف على QR بنجاح - عدد الأفراد: ${guest.individualCount || 1}`;
+                                scanMessage.style.color = 'var(--success-color)';
+                                
+                                // حساب عدد مرات الدخول السابقة
+                                const previousEntries = attendance.filter(a => a.qrData === guest.qrData);
+                                const entryCount = previousEntries.length + 1;
+                                
+                                scanDetails.innerHTML = `
+                                    <p><strong>اسم الضيف:</strong> ${guest.name}</p>
+                                    <p><strong>عدد الأفراد:</strong> ${guest.individualCount || 1}</p>
+                                    <p><strong>عدد مرات الدخول:</strong> ${entryCount}</p>
+                                    ${previousEntries.length > 0 ? 
+                                        `<p><strong>آخر دخول:</strong> ${formatDate(previousEntries[0].scanTime)}</p>` : 
+                                        ''}
+                                    <div style="margin-top: 20px;">
+                                        <button id="open-door-for-guest" class="btn btn-success">
+                                            <i class="fas fa-door-open"></i> فتح الباب للضيف (${guest.individualCount || 1} فرد)
+                                        </button>
+                                    </div>
+                                `;
+                                
+                                // حفظ سجل الحضور
+                                await saveAttendanceRecord(guest, entryCount);
+                                
+                                // فتح الباب تلقائياً
+                                openDoorForGuest(guest.name, guest.individualCount || 1);
+                                
+                                // إضافة مستمع الحدث لزر فتح الباب (تجاوز يدوي)
+                                setTimeout(() => {
+                                    document.getElementById('open-door-for-guest')?.addEventListener('click', () => {
+                                        openDoorForGuest(guest.name, guest.individualCount || 1);
+                                    });
+                                }, 100);
+                                
+                            } else {
+                                // QR غير صالح
+                                guestName.textContent = 'لم يتم التعرف على QR';
+                                scanMessage.textContent = 'رمز QR أو الرمز السريع غير صالح أو غير مسجل في النظام';
+                                scanMessage.style.color = 'var(--danger-color)';
+                                
+                                scanDetails.innerHTML = `
+                                    <p>يرجى التحقق من الرمز والمحاولة مرة أخرى</p>
+                                    <p>سيتمكن الماسح من المسح مرة أخرى خلال 5 ثوانٍ</p>
+                                    <div style="margin-top: 20px;">
+                                        <button id="retry-scan" class="btn btn-outline">
+                                            <i class="fas fa-redo"></i> المحاولة مرة أخرى
+                                        </button>
+                                    </div>
+                                `;
+                                
+                                // إرسال أمر إلى ESP8266 لعرض خطأ على شاشة LCD
+                                sendESPCommand('LCD_ERROR');
+                                
+                                // إضافة مستمع الحدث لزر المحاولة مرة أخرى
+                                setTimeout(() => {
+                                    document.getElementById('retry-scan')?.addEventListener('click', () => {
+                                        scanDetails.innerHTML = '';
+                                        // تم بدء التبريد بالفعل، لا حاجة لإعادة تشغيل الماسح هنا
+                                    });
+                                }, 100);
+                            }
+                            
+                            // عرض النتيجة
+                            scannerResult.style.display = 'block';
+                        }
+                        
+                        async function saveAttendanceRecord(guest, entryCount) {
+                            try {
+                                const attendanceData = {
+                                    guestId: guest.id,
+                                    guestName: guest.name,
+                                    individualCount: guest.individualCount || 1,
+                                    quickCode: guest.quickCode,
+                                    qrData: guest.qrData,
+                                    scanTime: window.firebase.serverTimestamp(),
+                                    entryNumber: entryCount,
+                                    doorOpened: true,
+                                    notes: entryCount > 1 ? `الدخول رقم ${entryCount}` : 'أول دخول'
+                                };
+                                
+                                await window.firebase.addDoc(
+                                    window.firebase.collection(window.firebase.db, 'attendance'),
+                                    attendanceData
+                                );
+                                
+                                // إعادة تحميل سجلات الحضور
+                                loadAttendance();
+                                
+                            } catch (error) {
+                                console.error('Error saving attendance:', error);
+                            }
+                        }
+                        
+                        function formatDate(dateObj) {
+                            if (!dateObj) return 'غير محدد';
+                            
+                            try {
+                                if (dateObj.toDate) {
+                                    return dateObj.toDate().toLocaleString('ar-EG');
+                                } else if (dateObj.seconds) {
+                                    return new Date(dateObj.seconds * 1000).toLocaleString('ar-EG');
+                                } else {
+                                    return 'غير محدد';
+                                }
+                            } catch (error) {
+                                return 'غير محدد';
+                            }
+                        }
+                        
+                        function openDoorForGuest(guestName, individualCount) {
+                            // Update UI
+                            document.getElementById('door-control-status').className = 'control-status status-on';
+                            document.getElementById('door-control-status').textContent = 'مفتوح';
+                            document.getElementById('door-status').textContent = 'مفتوح';
+                            
+                            document.getElementById('open-door-btn').disabled = true;
+                            document.getElementById('close-door-btn').disabled = false;
+                            
+                            // Send command to ESP8266 to open door
+                            sendESPCommand('DOOR_OPEN');
+                            
+                            showToast(`تم فتح الباب لـ ${guestName} (${individualCount} فرد)`, 'success');
+                            
+                            // Auto close after 10 seconds
+                            setTimeout(() => {
+                                closeDoor();
+                            }, 10000);
+                        }
+                        
+                        function checkManualQR() {
+                            const manualQR = document.getElementById('manual-qr').value.trim();
+                            
+                            if (!manualQR) {
+                                showToast('يرجى إدخال رمز QR أو الرمز السريع يدويًا', 'warning');
+                                return;
+                            }
+                            
+                            // Simulate scanning the manual QR/quick code
+                            handleScannedQR(manualQR);
+                        }
+                        
+                        function openDoor() {
+                            // Update UI
+                            document.getElementById('door-control-status').className = 'control-status status-on';
+                            document.getElementById('door-control-status').textContent = 'مفتوح';
+                            document.getElementById('door-status').textContent = 'مفتوح';
+                            
+                            document.getElementById('open-door-btn').disabled = true;
+                            document.getElementById('close-door-btn').disabled = false;
+                            
+                            // Send command to ESP8266
+                            sendESPCommand('DOOR_OPEN');
+                            
+                            showToast('تم إرسال أمر فتح الباب', 'success');
+                            
+                            // Auto close after 10 seconds
+                            setTimeout(() => {
+                                closeDoor();
+                            }, 10000);
+                        }
+                        
+                        function closeDoor() {
+                            // Update UI
+                            document.getElementById('door-control-status').className = 'control-status status-off';
+                            document.getElementById('door-control-status').textContent = 'مغلق';
+                            document.getElementById('door-status').textContent = 'مغلق';
+                            
+                            document.getElementById('open-door-btn').disabled = false;
+                            document.getElementById('close-door-btn').disabled = true;
+                            
+                            // Send command to ESP8266
+                            sendESPCommand('DOOR_CLOSE');
+                            
+                            showToast('تم إرسال أمر إغلاق الباب', 'success');
+                        }
+                        
+                        // ==================== وظائف التحكم في الإضاءة المحدثة ====================
+                        
+                        function toggleLight(lightNumber, turnOn) {
+                            const statusElement = document.getElementById(`light${lightNumber}-control-status`);
+                            const onBtn = document.getElementById(`light${lightNumber}-on-btn`);
+                            const offBtn = document.getElementById(`light${lightNumber}-off-btn`);
+                            
+                            if (turnOn) {
+                                statusElement.className = 'control-status status-on';
+                                statusElement.textContent = 'مشغلة';
+                                onBtn.disabled = true;
+                                offBtn.disabled = false;
+                                
+                                // تحديث Firebase مباشرة
+                                updateLightStatusInFirebase(lightNumber, true);
+                                
+                                // إرسال أمر إلى ESP8266
+                                sendESPCommand(`LIGHT${lightNumber}_ON`);
+                                
+                                showToast(`تم تشغيل الإضاءة ${lightNumber}`, 'success');
+                            } else {
+                                statusElement.className = 'control-status status-off';
+                                statusElement.textContent = 'مطفأة';
+                                onBtn.disabled = false;
+                                offBtn.disabled = true;
+                                
+                                // تحديث Firebase مباشرة
+                                updateLightStatusInFirebase(lightNumber, false);
+                                
+                                // إرسال أمر إلى ESP8266
+                                sendESPCommand(`LIGHT${lightNumber}_OFF`);
+                                
+                                showToast(`تم إطفاء الإضاءة ${lightNumber}`, 'success');
+                            }
+                            
+                            // تحديث حالة الأنوار الكلية
+                            updateLightsStatus();
+                        }
+                        
+                        function updateLightStatusInFirebase(lightNumber, isOn) {
+                            if (window.firebase && window.firebase.rtdb) {
+                                const path = `/devices/light${lightNumber}/status`;
+                                window.firebase.set(window.firebase.ref(window.firebase.rtdb, path), isOn)
+                                    .then(() => {
+                                        console.log(`Light ${lightNumber} status updated in Firebase: ${isOn}`);
+                                        
+                                        // تحديث الوقت أيضاً
+                                        const timePath = `/devices/light${lightNumber}/lastChange`;
+                                        window.firebase.set(window.firebase.ref(window.firebase.rtdb, timePath), Date.now());
+                                    })
+                                    .catch(error => {
+                                        console.error(`Error updating light ${lightNumber} status:`, error);
+                                    });
+                            }
+                        }
+                        
+                        // ==================== دالة تشغيل كل الأنوار ====================
+                        function turnOnAllLights() {
+                            console.log("تشغيل جميع الأنوار...");
+                            
+                            // تحديث حالة الأضواء في Firebase مباشرة
+                            updateLightStatusInFirebase(1, true);
+                            updateLightStatusInFirebase(2, true);
+                            
+                            // إرسال أمر مباشر إلى ESP8266
+                            sendESPCommand('ALL_LIGHTS_ON');
+                            
+                            // تحديث واجهة المستخدم فوراً
+                            setTimeout(() => {
+                                document.getElementById('light1-control-status').className = 'control-status status-on';
+                                document.getElementById('light1-control-status').textContent = 'مشغلة';
+                                document.getElementById('light1-on-btn').disabled = true;
+                                document.getElementById('light1-off-btn').disabled = false;
+                                
+                                document.getElementById('light2-control-status').className = 'control-status status-on';
+                                document.getElementById('light2-control-status').textContent = 'مشغلة';
+                                document.getElementById('light2-on-btn').disabled = true;
+                                document.getElementById('light2-off-btn').disabled = false;
+                                
+                                document.getElementById('lights-status').textContent = 'مشغلة';
+                            }, 300);
+                            
+                            showToast('تم تشغيل جميع الأنوار', 'success');
+                        }
+                        
+                        // ==================== دالة إطفاء كل الأنوار ====================
+                        function turnOffAllLights() {
+                            console.log("إطفاء جميع الأنوار...");
+                            
+                            // تحديث حالة الأضواء في Firebase مباشرة
+                            updateLightStatusInFirebase(1, false);
+                            updateLightStatusInFirebase(2, false);
+                            
+                            // إرسال أمر مباشر إلى ESP8266
+                            sendESPCommand('ALL_LIGHTS_OFF');
+                            
+                            // تحديث واجهة المستخدم فوراً
+                            setTimeout(() => {
+                                document.getElementById('light1-control-status').className = 'control-status status-off';
+                                document.getElementById('light1-control-status').textContent = 'مطفأة';
+                                document.getElementById('light1-on-btn').disabled = false;
+                                document.getElementById('light1-off-btn').disabled = true;
+                                
+                                document.getElementById('light2-control-status').className = 'control-status status-off';
+                                document.getElementById('light2-control-status').textContent = 'مطفأة';
+                                document.getElementById('light2-on-btn').disabled = false;
+                                document.getElementById('light2-off-btn').disabled = true;
+                                
+                                document.getElementById('lights-status').textContent = 'مطفأة';
+                            }, 300);
+                            
+                            showToast('تم إطفاء جميع الأنوار', 'success');
+                        }
+                        
+                        function updateLightsStatus() {
+                            const light1Status = document.getElementById('light1-control-status').textContent;
+                            const light2Status = document.getElementById('light2-control-status').textContent;
+                            
+                            if (light1Status === 'مشغلة' || light2Status === 'مشغلة') {
+                                document.getElementById('lights-status').textContent = 'مشغلة';
+                            } else {
+                                document.getElementById('lights-status').textContent = 'مطفأة';
+                            }
+                        }
+                        
+                        function sendESPCommand(command) {
+                            console.log(`Sending command to ESP8266: ${command}`);
+                            
+                            // تحديث Firebase Realtime Database مع الأمر
+                            window.firebase.set(window.firebase.ref(window.firebase.rtdb, 'commands/latest'), {
+                                command: command,
+                                timestamp: Date.now(),
+                                executed: false
+                            })
+                            .then(() => {
+                                console.log(`Command ${command} sent to Firebase`);
+                                
+                                // تحديث وقت آخر تحديث
+                                document.getElementById('last-update').textContent = 'الآن';
+                                showToast(`تم إرسال الأمر: ${command}`, 'success');
+                            })
+                            .catch(error => {
+                                console.error('Error sending command:', error);
+                                showToast('تعذر إرسال الأمر إلى ESP8266', 'error');
+                            });
+                        }
+                        
+                        function refreshSystemStatus() {
+                            document.getElementById('last-update').textContent = 'الآن';
+                            showToast('تم تحديث حالة النظام', 'success');
+                        }
+                        
+                        // ==================== وظائف تحليل الطقس الجديدة ====================
+                        
+                        async function loadAndAnalyzeWeatherData() {
+                            try {
+                                // عرض رسالة تحميل
+                                document.getElementById('temperature-recommendation').innerHTML = 
+                                    '<i class="fas fa-spinner fa-spin"></i> جاري تحليل بيانات القاعة...';
+                                
+                                document.getElementById('detailed-recommendations').innerHTML = `
+                                    <p>1. جاري تحميل البيانات الحالية...</p>
+                                    <p>2. جاري تحليل البيانات التاريخية...</p>
+                                    <p>3. جاري إنشاء التحليل الذكي...</p>
+                                `;
+                                
+                                // 1. تحميل البيانات الحالية من Firebase
+                                await loadCurrentWeatherData();
+                                
+                                // 2. تحميل وتحليل البيانات التاريخية
+                                await loadHistoricalData();
+                                
+                                // 3. إنشاء التحليل الذكي
+                                await createSmartAnalysis();
+                                
+                                // 4. تحديث وقت التحديث
+                                document.getElementById('data-update-time').textContent = 
+                                    `آخر تحديث: ${new Date().toLocaleTimeString('ar-EG')}`;
+                                
+                                showToast('تم تحديث تحليل بيانات القاعة بنجاح', 'success');
+                                
+                            } catch (error) {
+                                console.error('Error loading weather data:', error);
+                                showToast('حدث خطأ في تحليل بيانات القاعة', 'error');
+                                
+                                // عرض بيانات افتراضية في حالة الخطأ
+                                displayDefaultWeatherAnalysis();
+                            }
+                        }
+                        
+                        async function loadCurrentWeatherData() {
+                            return new Promise((resolve, reject) => {
+                                try {
+                                    // الحصول على درجة الحرارة الحالية
+                                    const tempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature/value');
+                                    window.firebase.get(tempRef).then((snapshot) => {
+                                        if (snapshot.exists()) {
+                                            const currentTemp = parseFloat(snapshot.val());
+                                            
+                                            // تحديث العرض
+                                            document.getElementById('current-temp').textContent = `${currentTemp}°C`;
+                                            document.getElementById('current-temp-display').textContent = `${currentTemp}°C`;
+                                        }
+                                        
+                                        // الحصول على الرطوبة الحالية
+                                        const humidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity/value');
+                                        window.firebase.get(humidityRef).then((snapshot) => {
+                                            if (snapshot.exists()) {
+                                                const currentHumidity = parseFloat(snapshot.val());
+                                                
+                                                // تحديث العرض
+                                                document.getElementById('current-humidity-display').textContent = 
+                                                    `الرطوبة: ${currentHumidity}%`;
+                                            }
+                                            resolve();
+                                        }).catch(error => {
+                                            console.error('Error loading humidity:', error);
+                                            resolve();
+                                        });
+                                        
+                                    }).catch(error => {
+                                        console.error('Error loading temperature:', error);
+                                        resolve();
+                                    });
+                                    
+                                } catch (error) {
+                                    console.error('Error loading current weather data:', error);
+                                    reject(error);
+                                }
+                            });
+                        }
+                        
+                        async function loadHistoricalData() {
+                            try {
+                                // الحصول على البيانات التاريخية من Firebase
+                                const historyRef = window.firebase.ref(window.firebase.rtdb, 'weather_history');
+                                
+                                window.firebase.get(historyRef).then((snapshot) => {
+                                    if (snapshot.exists()) {
+                                        const historyData = snapshot.val();
+                                        weatherHistory = [];
+                                        
+                                        // تحويل البيانات إلى مصفوفة
+                                        for (const key in historyData) {
+                                            if (historyData.hasOwnProperty(key)) {
+                                                weatherHistory.push({
+                                                    id: key,
+                                                    ...historyData[key]
+                                                });
+                                            }
+                                        }
+                                        
+                                        // ترتيب البيانات حسب الوقت (الأحدث أولاً)
+                                        weatherHistory.sort((a, b) => b.timestamp - a.timestamp);
+                                        
+                                        // تحديث عدد القراءات المسجلة
+                                        document.getElementById('recorded-readings').textContent = weatherHistory.length;
+                                        document.getElementById('total-samples').textContent = `${weatherHistory.length} قراءة`;
+                                        
+                                        // تحليل البيانات التاريخية
+                                        analyzeHistoricalData(weatherHistory);
+                                        
+                                        // تحديث جدول التاريخ
+                                        updateHistoryTable(weatherHistory);
+                                        
+                                    } else {
+                                        // لا توجد بيانات تاريخية
+                                        console.log('No historical weather data found');
+                                        document.getElementById('recorded-readings').textContent = '0';
+                                        document.getElementById('total-samples').textContent = '0 قراءة';
+                                    }
+                                }).catch(error => {
+                                    console.error('Error loading historical data:', error);
+                                });
+                                
+                            } catch (error) {
+                                console.error('Error in loadHistoricalData:', error);
+                            }
+                        }
+                        
+                        function analyzeHistoricalData(historyData) {
+                            if (historyData.length === 0) {
+                                // لا توجد بيانات
+                                document.getElementById('avg-empty-temp').textContent = '--°C';
+                                document.getElementById('avg-empty-humidity').textContent = '--%';
+                                document.getElementById('max-occupied-temp').textContent = '--°C';
+                                document.getElementById('max-occupied-humidity').textContent = '--%';
+                                document.getElementById('recording-duration').textContent = 'لا توجد بيانات';
+                                return;
+                            }
+                            
+                            let emptyTempSum = 0;
+                            let emptyHumiditySum = 0;
+                            let emptyCount = 0;
+                            
+                            let occupiedTempSum = 0;
+                            let occupiedHumiditySum = 0;
+                            let occupiedCount = 0;
+                            
+                            let maxOccupiedTemp = -100;
+                            let maxOccupiedHumidity = 0;
+                            
+                            // تحليل البيانات
+                            historyData.forEach(record => {
+                                if (record.hallStatus === 'empty') {
+                                    emptyTempSum += record.temperature || 0;
+                                    emptyHumiditySum += record.humidity || 0;
+                                    emptyCount++;
+                                } else if (record.hallStatus === 'occupied') {
+                                    occupiedTempSum += record.temperature || 0;
+                                    occupiedHumiditySum += record.humidity || 0;
+                                    occupiedCount++;
+                                    
+                                    if (record.temperature > maxOccupiedTemp) {
+                                        maxOccupiedTemp = record.temperature;
+                                    }
+                                    if (record.humidity > maxOccupiedHumidity) {
+                                        maxOccupiedHumidity = record.humidity;
+                                    }
+                                }
+                            });
+                            
+                            // حساب المتوسطات
+                            const avgEmptyTemp = emptyCount > 0 ? (emptyTempSum / emptyCount).toFixed(1) : '--';
+                            const avgEmptyHumidity = emptyCount > 0 ? (emptyHumiditySum / emptyCount).toFixed(0) : '--';
+                            const avgOccupiedTemp = occupiedCount > 0 ? (occupiedTempSum / occupiedCount).toFixed(1) : '--';
+                            const avgOccupiedHumidity = occupiedCount > 0 ? (occupiedHumiditySum / occupiedCount).toFixed(0) : '--';
+                            
+                            // تحديث واجهة المستخدم
+                            document.getElementById('avg-empty-temp').textContent = `${avgEmptyTemp}°C`;
+                            document.getElementById('avg-empty-humidity').textContent = `${avgEmptyHumidity}%`;
+                            document.getElementById('max-occupied-temp').textContent = `${maxOccupiedTemp > -100 ? maxOccupiedTemp.toFixed(1) : '--'}°C`;
+                            document.getElementById('max-occupied-humidity').textContent = `${maxOccupiedHumidity > 0 ? maxOccupiedHumidity.toFixed(0) : '--'}%`;
+                            
+                            // حساب مدة التسجيل
+                            if (historyData.length > 0) {
+                                const oldestRecord = historyData[historyData.length - 1];
+                                const newestRecord = historyData[0];
+                                const durationMs = newestRecord.timestamp - oldestRecord.timestamp;
+                                const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+                                
+                                if (durationHours > 24) {
+                                    const days = Math.floor(durationHours / 24);
+                                    document.getElementById('recording-duration').textContent = `${days} يوم`;
+                                } else if (durationHours > 0) {
+                                    document.getElementById('recording-duration').textContent = `${durationHours} ساعة`;
+                                } else {
+                                    document.getElementById('recording-duration').textContent = 'أقل من ساعة';
+                                }
+                            }
+                        }
+                        
+                        function updateHistoryTable(historyData) {
+                            const tbody = document.getElementById('history-table-body');
+                            tbody.innerHTML = '';
+                            
+                            // عرض آخر 20 قراءة فقط
+                            const recentData = historyData.slice(0, 20);
+                            
+                            recentData.forEach(record => {
+                                const row = document.createElement('tr');
+                                const date = new Date(record.timestamp);
+                                const timeString = date.toLocaleTimeString('ar-EG', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                });
+                                const dateString = date.toLocaleDateString('ar-EG');
+                                
+                                const hallStatusText = record.hallStatus === 'occupied' ? 
+                                    '<span style="color: var(--danger-color); font-weight: bold;">مليئة</span>' : 
+                                    '<span style="color: var(--success-color); font-weight: bold;">فارغة</span>';
+                                
+                                row.innerHTML = `
+                                    <td>${dateString} ${timeString}</td>
+                                    <td>${record.temperature ? record.temperature.toFixed(1) + '°C' : '--'}</td>
+                                    <td>${record.humidity ? record.humidity.toFixed(0) + '%' : '--'}</td>
+                                    <td>${hallStatusText}</td>
+                                    <td>${record.guestsCount || 0}</td>
+                                `;
+                                
+                                tbody.appendChild(row);
+                            });
+                        }
+                        
+                        function toggleHistoryTable() {
+                            const tableContainer = document.getElementById('history-table-container');
+                            const viewHistoryBtn = document.getElementById('view-history');
+                            
+                            if (tableContainer.style.display === 'none' || tableContainer.style.display === '') {
+                                tableContainer.style.display = 'block';
+                                viewHistoryBtn.innerHTML = '<i class="fas fa-times"></i> إخفاء السجل';
+                                viewHistoryBtn.classList.remove('btn-outline');
+                                viewHistoryBtn.classList.add('btn-primary');
+                            } else {
+                                tableContainer.style.display = 'none';
+                                viewHistoryBtn.innerHTML = '<i class="fas fa-history"></i> عرض السجل الكامل';
+                                viewHistoryBtn.classList.remove('btn-primary');
+                                viewHistoryBtn.classList.add('btn-outline');
+                            }
+                        }
+                        
+                        async function createSmartAnalysis() {
+                            // الحصول على حالة القاعة من عدد الضيوف
+                            const totalGuests = guests.length;
+                            let presentGuests = 0;
+                            const presentGuestsSet = new Set();
+                            attendance.forEach(record => {
+                                const guest = guests.find(g => g.qrData === record.qrData);
+                                if (guest && !presentGuestsSet.has(guest.id)) {
+                                    presentGuestsSet.add(guest.id);
+                                    presentGuests++;
+                                }
+                            });
+                            
+                            const hallStatus = updateHallStatus(presentGuests, totalGuests);
+                            
+                            // تحميل البيانات الحالية
+                            const currentTempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature/value');
+                            const currentHumidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity/value');
+                            
+                            const [tempSnapshot, humiditySnapshot] = await Promise.all([
+                                window.firebase.get(currentTempRef),
+                                window.firebase.get(currentHumidityRef)
+                            ]);
+                            
+                            let currentTemp = null;
+                            let currentHumidity = null;
+                            
+                            if (tempSnapshot.exists()) {
+                                currentTemp = parseFloat(tempSnapshot.val());
+                            }
+                            
+                            if (humiditySnapshot.exists()) {
+                                currentHumidity = parseFloat(humiditySnapshot.val());
+                            }
+                            
+                            // إذا كانت هناك بيانات حالية، احفظها في التاريخ
+                            if (currentTemp !== null && currentHumidity !== null) {
+                                await saveCurrentReading(currentTemp, currentHumidity, hallStatus, presentGuests);
+                            }
+                            
+                            // تحليل تأثير المعازيم
+                            await analyzeOccupancyImpact(hallStatus, presentGuests, totalGuests, currentTemp, currentHumidity);
+                            
+                            // إنشاء التوصيات الذكية
+                            generateSmartRecommendations(hallStatus, presentGuests, totalGuests, currentTemp, currentHumidity);
+                        }
+                        
+                        async function saveCurrentReading(temperature, humidity, hallStatus, guestsCount) {
+                            try {
+                                const readingData = {
+                                    temperature: temperature,
+                                    humidity: humidity,
+                                    hallStatus: hallStatus,
+                                    guestsCount: guestsCount,
+                                    timestamp: Date.now()
+                                };
+                                
+                                // حفظ القراءة في Firebase
+                                const historyRef = window.firebase.ref(window.firebase.rtdb, 'weather_history');
+                                const newReadingRef = window.firebase.push(historyRef);
+                                
+                                await window.firebase.set(newReadingRef, readingData);
+                                
+                                // إضافة القراءة إلى المصفوفة المحلية
+                                weatherHistory.unshift({
+                                    id: newReadingRef.key,
+                                    ...readingData
+                                });
+                                
+                                // تحديث عدد القراءات
+                                document.getElementById('recorded-readings').textContent = weatherHistory.length;
+                                
+                            } catch (error) {
+                                console.error('Error saving weather reading:', error);
+                            }
+                        }
+                        
+                        async function analyzeOccupancyImpact(hallStatus, presentGuests, totalGuests, currentTemp, currentHumidity) {
+                            if (weatherHistory.length === 0) {
+                                // لا توجد بيانات تاريخية
+                                document.getElementById('temp-impact').textContent = '--';
+                                document.getElementById('humidity-impact').textContent = '--';
+                                document.getElementById('climate-trend').textContent = 'لا توجد بيانات';
+                                document.getElementById('data-samples').textContent = '0 قراءة';
+                                return;
+                            }
+                            
+                            // حساب متوسط القاعة الفارغة من البيانات التاريخية
+                            let emptyTempSum = 0;
+                            let emptyHumiditySum = 0;
+                            let emptyCount = 0;
+                            
+                            weatherHistory.forEach(record => {
+                                if (record.hallStatus === 'empty') {
+                                    emptyTempSum += record.temperature || 0;
+                                    emptyHumiditySum += record.humidity || 0;
+                                    emptyCount++;
+                                }
+                            });
+                            
+                            if (emptyCount === 0 || currentTemp === null || currentHumidity === null) {
+                                // لا توجد بيانات كافية
+                                document.getElementById('temp-impact').textContent = '--';
+                                document.getElementById('humidity-impact').textContent = '--';
+                                document.getElementById('climate-trend').textContent = 'بيانات غير كافية';
+                                document.getElementById('data-samples').textContent = `${weatherHistory.length} قراءة`;
+                                return;
+                            }
+                            
+                            const avgEmptyTemp = emptyTempSum / emptyCount;
+                            const avgEmptyHumidity = emptyHumiditySum / emptyCount;
+                            
+                            // حساب التأثير
+                            const tempImpact = currentTemp - avgEmptyTemp;
+                            const humidityImpact = currentHumidity - avgEmptyHumidity;
+                            
+                            // تحديد الاتجاه
+                            let climateTrend = 'مستقر';
+                            if (tempImpact > 3) {
+                                climateTrend = 'ارتفاع حاد في الحرارة';
+                            } else if (tempImpact > 1.5) {
+                                climateTrend = 'ارتفاع ملحوظ في الحرارة';
+                            } else if (tempImpact > 0.5) {
+                                climateTrend = 'ارتفاع طفيف في الحرارة';
+                            } else if (tempImpact < -1.5) {
+                                climateTrend = 'انخفاض ملحوظ في الحرارة';
+                            } else if (tempImpact < -0.5) {
+                                climateTrend = 'انخفاض طفيف في الحرارة';
+                            }
+                            
+                            // تحديث واجهة المستخدم
+                            document.getElementById('temp-impact').textContent = 
+                                tempImpact > 0 ? `+${tempImpact.toFixed(1)}°C` : `${tempImpact.toFixed(1)}°C`;
+                            document.getElementById('temp-impact').className = 
+                                `analysis-value ${tempImpact > 2 ? 'negative' : tempImpact > 0.5 ? 'neutral' : 'positive'}`;
+                            
+                            document.getElementById('humidity-impact').textContent = 
+                                humidityImpact > 0 ? `+${humidityImpact.toFixed(1)}%` : `${humidityImpact.toFixed(1)}%`;
+                            document.getElementById('humidity-impact').className = 
+                                `analysis-value ${humidityImpact > 10 ? 'negative' : humidityImpact > 5 ? 'neutral' : 'positive'}`;
+                            
+                            document.getElementById('climate-trend').textContent = climateTrend;
+                            document.getElementById('climate-trend').className = 
+                                `analysis-value ${climateTrend.includes('حاد') ? 'negative' : climateTrend.includes('ملحوظ') ? 'neutral' : 'positive'}`;
+                            
+                            // تحديث شريط التقدم
+                            const impactBar = document.getElementById('occupancy-impact-bar');
+                            const impactLevelText = document.getElementById('occupancy-impact-level');
+                            
+                            let impactPercent = 0;
+                            if (hallStatus === 'occupied' && totalGuests > 0) {
+                                const occupancyRate = (presentGuests / totalGuests) * 100;
+                                impactPercent = Math.min(occupancyRate / 10, 10) * 10;
+                            }
+                            
+                            impactBar.style.width = `${impactPercent}%`;
+                            
+                            // تحديد لون الشريط
+                            if (impactPercent >= 70) {
+                                impactBar.className = 'progress-fill high';
+                                impactLevelText.textContent = 'عالٍ جداً';
+                                impactLevelText.style.color = 'var(--danger-color)';
+                            } else if (impactPercent >= 40) {
+                                impactBar.className = 'progress-fill medium';
+                                impactLevelText.textContent = 'متوسط';
+                                impactLevelText.style.color = 'var(--warning-color)';
+                            } else {
+                                impactBar.className = 'progress-fill low';
+                                impactLevelText.textContent = 'منخفض';
+                                impactLevelText.style.color = 'var(--success-color)';
+                            }
+                            
+                            // تحديث عدد العينات
+                            document.getElementById('data-samples').textContent = 
+                                `${weatherHistory.length} قراءة`;
+                        }
+                        
+                        function generateSmartRecommendations(hallStatus, presentGuests, totalGuests, currentTemp, currentHumidity) {
+                            if (currentTemp === null || currentHumidity === null) {
+                                recommendation = `
+                                    <i class="fas fa-exclamation-triangle"></i> لا توجد قراءات حالية - تحقق من الاتصال
+                                `;
+                                adviceClass = 'advice-warning';
+                                
+                                detailedRecommendations = `
+                                    <p>1. تأكد من اتصال ESP8266 بالإنترنت</p>
+                                    <p>2. تحقق من اتصال Firebase</p>
+                                    <p>3. تأكد من عمل حساس DHT11</p>
+                                    <p>4. حاول تحديث البيانات مرة أخرى</p>
+                                `;
+                                
+                                // تحديث واجهة المستخدم
+                                const recommendationElement = document.getElementById('temperature-recommendation');
+                                recommendationElement.innerHTML = recommendation;
+                                recommendationElement.className = `temp-advice ${adviceClass}`;
+                                
+                                document.getElementById('detailed-recommendations').innerHTML = detailedRecommendations;
+                                return;
+                            }
+                            
+                            let recommendation = '';
+                            let detailedRecommendations = '';
+                            let adviceClass = 'advice-good';
+                            
+                            if (hallStatus === 'empty' || presentGuests === 0) {
+                                // القاعة فارغة
+                                recommendation = `
+                                    <i class="fas fa-check-circle"></i> القاعة جاهزة - الظروف مثالية لاستقبال المعازيم
+                                `;
+                                adviceClass = 'advice-good';
+                                
+                                detailedRecommendations = `
+                                    <p>1. درجة الحرارة الحالية (${currentTemp.toFixed(1)}°C) مثالية لبدء الحفلة</p>
+                                    <p>2. الرطوبة (${currentHumidity.toFixed(0)}%) ضمن المستوى المثالي</p>
+                                    <p>3. القاعة جاهزة لاستقبال ${totalGuests} ضيف</p>
+                                    <p>4. حافظ على التهوية الطبيعية للقاعة قبل وصول المعازيم</p>
+                                `;
+                                
+                            } else {
+                                // القاعة مليئة
+                                const occupancyRate = totalGuests > 0 ? (presentGuests / totalGuests) * 100 : 0;
+                                
+                                // تحليل البيانات التاريخية للمقارنة
+                                let avgOccupiedTemp = currentTemp;
+                                let avgOccupiedHumidity = currentHumidity;
+                                
+                                if (weatherHistory.length > 0) {
+                                    let occupiedTempSum = 0;
+                                    let occupiedHumiditySum = 0;
+                                    let occupiedCount = 0;
+                                    
+                                    weatherHistory.forEach(record => {
+                                        if (record.hallStatus === 'occupied') {
+                                            occupiedTempSum += record.temperature || 0;
+                                            occupiedHumiditySum += record.humidity || 0;
+                                            occupiedCount++;
+                                        }
+                                    });
+                                    
+                                    if (occupiedCount > 0) {
+                                        avgOccupiedTemp = occupiedTempSum / occupiedCount;
+                                        avgOccupiedHumidity = occupiedHumiditySum / occupiedCount;
+                                    }
+                                }
+                                
+                                // تحديد التوصيات بناءً على البيانات
+                                const tempDiff = currentTemp - avgOccupiedTemp;
+                                const humidityDiff = currentHumidity - avgOccupiedHumidity;
+                                
+                                if (currentTemp > 28) {
+                                    recommendation = `
+                                        <i class="fas fa-fire"></i> درجة حرارة عالية - زد التبريد فوراً
+                                    `;
+                                    adviceClass = 'advice-critical';
+                                    
+                                    detailedRecommendations = `
+                                        <p>1. درجة الحرارة (${currentTemp.toFixed(1)}°C) مرتفعة جداً</p>
+                                        <p>2. أعلى من المتوسط التاريخي بمقدار ${tempDiff.toFixed(1)}°C</p>
+                                        <p>3. قم بزيادة قدرة التكييف بنسبة ${Math.round((currentTemp - 24) * 10)}%</p>
+                                        <p>4. افتح النوافذ لتحسين التهوية</p>
+                                        <p>5. قلل الإضاءة لتقليل الحرارة الناتجة</p>
+                                        <p>6. نسبة الامتلاء: ${Math.round(occupancyRate)}% - ${presentGuests} ضيف</p>
+                                    `;
+                                    
+                                } else if (currentTemp > 25) {
+                                    recommendation = `
+                                        <i class="fas fa-thermometer-three-quarters"></i> حرارة متوسطة - قلل التبريد تدريجياً
+                                    `;
+                                    adviceClass = 'advice-warning';
+                                    
+                                    detailedRecommendations = `
+                                        <p>1. درجة الحرارة (${currentTemp.toFixed(1)}°C) مرتفعة قليلاً</p>
+                                        <p>2. أعلى من المتوسط التاريخي بمقدار ${tempDiff.toFixed(1)}°C</p>
+                                        <p>3. قلل التكييف بنسبة ${Math.round((currentTemp - 23) * 5)}%</p>
+                                        <p>4. حافظ على التهوية المعتدلة</p>
+                                        <p>5. راقب تغير الحرارة كل 30 دقيقة</p>
+                                        <p>6. نسبة الامتلاء: ${Math.round(occupancyRate)}% - ${presentGuests} ضيف</p>
+                                    `;
+                                    
+                                } else if (currentTemp < 20) {
+                                    recommendation = `
+                                        <i class="fas fa-snowflake"></i> درجة حرارة منخفضة - قلل التبريد
+                                    `;
+                                    adviceClass = 'advice-warning';
+                                    
+                                    detailedRecommendations = `
+                                        <p>1. درجة الحرارة (${currentTemp.toFixed(1)}°C) منخفضة جداً</p>
+                                        <p>2. أقل من المتوسط التاريخي بمقدار ${Math.abs(tempDiff).toFixed(1)}°C</p>
+                                        <p>3. قلل التكييف بنسبة ${Math.round((22 - currentTemp) * 10)}%</p>
+                                        <p>4. أغلق بعض فتحات التهوية</p>
+                                        <p>5. شغّل الدفايات إذا كانت متوفرة</p>
+                                        <p>6. نسبة الامتلاء: ${Math.round(occupancyRate)}% - ${presentGuests} ضيف</p>
+                                    `;
+                                    
+                                } else {
+                                    recommendation = `
+                                        <i class="fas fa-thumbs-up"></i> ظروف مثالية - حافظ على الإعدادات الحالية
+                                    `;
+                                    adviceClass = 'advice-good';
+                                    
+                                    detailedRecommendations = `
+                                        <p>1. درجة الحرارة (${currentTemp.toFixed(1)}°C) مثالية للقاعة الممتلئة</p>
+                                        <p>2. قريبة من المتوسط التاريخي (${avgOccupiedTemp.toFixed(1)}°C)</p>
+                                        <p>3. الرطوبة (${currentHumidity.toFixed(0)}%) مناسبة لـ ${presentGuests} ضيف</p>
+                                        <p>4. حافظ على إعدادات التكييف الحالية</p>
+                                        <p>5. استمر في مراقبة المناخ كل ساعة</p>
+                                        <p>6. نسبة الامتلاء: ${Math.round(occupancyRate)}% - حالة جيدة</p>
+                                    `;
+                                }
+                                
+                                // إضافة توصيات خاصة بالرطوبة
+                                if (currentHumidity > 70) {
+                                    detailedRecommendations += `
+                                        <p>7. <strong>تنبيه:</strong> الرطوبة عالية (${currentHumidity.toFixed(0)}%) - أعلى من المتوسط بمقدار ${humidityDiff.toFixed(1)}%</p>
+                                        <p>8. <strong>الإجراء:</strong> شغّل مزيل الرطوبة أو زد التهوية</p>
+                                    `;
+                                    adviceClass = 'advice-warning';
+                                } else if (currentHumidity < 30) {
+                                    detailedRecommendations += `
+                                        <p>7. <strong>تنبيه:</strong> الرطوبة منخفضة (${currentHumidity.toFixed(0)}%) - أقل من المتوسط بمقدار ${Math.abs(humidityDiff).toFixed(1)}%</p>
+                                        <p>8. <strong>الإجراء:</strong> زد الترطيب أو قلل التهوية</p>
+                                    `;
+                                    adviceClass = 'advice-warning';
+                                }
+                            }
+                            
+                            // تحديث واجهة المستخدم
+                            const recommendationElement = document.getElementById('temperature-recommendation');
+                            recommendationElement.innerHTML = recommendation;
+                            recommendationElement.className = `temp-advice ${adviceClass}`;
+                            
+                            document.getElementById('detailed-recommendations').innerHTML = detailedRecommendations;
+                        }
+                        
+                        function toggleRecording() {
+                            const startRecordingBtn = document.getElementById('start-recording');
+                            
+                            if (!isRecording) {
+                                // بدء التسجيل
+                                isRecording = true;
+                                recordingStartTime = Date.now();
+                                startRecordingBtn.innerHTML = '<i class="fas fa-stop"></i> إيقاف التسجيل';
+                                startRecordingBtn.classList.remove('btn-success');
+                                startRecordingBtn.classList.add('btn-danger');
+                                
+                                showToast('تم بدء تسجيل البيانات تلقائياً', 'success');
+                            } else {
+                                // إيقاف التسجيل
+                                isRecording = false;
+                                recordingStartTime = null;
+                                startRecordingBtn.innerHTML = '<i class="fas fa-record-vinyl"></i> بدء التسجيل';
+                                startRecordingBtn.classList.remove('btn-danger');
+                                startRecordingBtn.classList.add('btn-success');
+                                
+                                showToast('تم إيقاف تسجيل البيانات', 'info');
+                            }
+                        }
+                        
+                        function updateRealTimeAnalysis() {
+                            // تحديث مؤشر الوقت الفعلي
+                            const indicator = document.getElementById('weather-realtime-indicator');
+                            indicator.classList.remove('real-time-inactive');
+                            indicator.classList.add('real-time-active');
+                            
+                            // تحديث وقت آخر تحديث
+                            document.getElementById('data-update-time').textContent = 
+                                `آخر تحديث: ${new Date().toLocaleTimeString('ar-EG')}`;
+                            
+                            // إذا كان التسجيل نشطاً، احفظ قراءة كل دقيقة
+                            if (isRecording && recordingStartTime) {
+                                const now = Date.now();
+                                const minutesSinceStart = Math.floor((now - recordingStartTime) / (1000 * 60));
+                                
+                                // تسجيل كل دقيقة
+                                if (minutesSinceStart > 0 && now % 60000 < 2000) { // كل دقيقة تقريباً
+                                    loadCurrentWeatherData().then(() => {
+                                        const hallStatus = document.getElementById('hall-status-badge')
+                                            .className.includes('occupied') ? 'occupied' : 'empty';
+                                        const totalGuests = guests.length;
+                                        let presentGuests = 0;
+                                        const presentGuestsSet = new Set();
+                                        attendance.forEach(record => {
+                                            const guest = guests.find(g => g.qrData === record.qrData);
+                                            if (guest && !presentGuestsSet.has(guest.id)) {
+                                                presentGuestsSet.add(guest.id);
+                                                presentGuests++;
+                                            }
+                                        });
+                                        
+                                        // حفظ القراءة
+                                        saveCurrentReading(
+                                            parseFloat(document.getElementById('current-temp-display').textContent) || 0,
+                                            parseFloat(document.getElementById('current-humidity-display').textContent) || 0,
+                                            hallStatus,
+                                            presentGuests
+                                        );
+                                    });
+                                }
+                            }
+                            
+                            // تحديث التحليل
+                            loadAndAnalyzeWeatherData();
+                        }
+                        
+                        function displayDefaultWeatherAnalysis() {
+                            // بيانات افتراضية للعرض
+                            document.getElementById('current-temp-display').textContent = '--°C';
+                            document.getElementById('current-humidity-display').textContent = 'الرطوبة: --%';
+                            document.getElementById('data-update-time').textContent = 'آخر تحديث: --';
+                            
+                            document.getElementById('temp-impact').textContent = '--';
+                            document.getElementById('humidity-impact').textContent = '--';
+                            document.getElementById('climate-trend').textContent = '--';
+                            document.getElementById('data-samples').textContent = '--';
+                            
+                            document.getElementById('occupancy-impact-level').textContent = '--';
+                            document.getElementById('occupancy-impact-bar').style.width = '0%';
+                            
+                            document.getElementById('temperature-recommendation').innerHTML = 
+                                '<i class="fas fa-exclamation-triangle"></i> تعذر تحليل البيانات - تأكد من اتصال الـ ESP';
+                            document.getElementById('temperature-recommendation').className = 'temp-advice advice-warning';
+                            
+                            document.getElementById('detailed-recommendations').innerHTML = `
+                                <p>1. تأكد من اتصال ESP8266 بالإنترنت</p>
+                                <p>2. تحقق من اتصال Firebase</p>
+                                <p>3. تأكد من عمل حساس DHT11</p>
+                                <p>4. حاول تحديث البيانات مرة أخرى</p>
+                            `;
+                            
+                            document.getElementById('avg-empty-temp').textContent = '--°C';
+                            document.getElementById('avg-empty-humidity').textContent = '--%';
+                            document.getElementById('max-occupied-temp').textContent = '--°C';
+                            document.getElementById('max-occupied-humidity').textContent = '--%';
+                            document.getElementById('total-samples').textContent = '--';
+                            document.getElementById('recording-duration').textContent = '--';
+                        }
+                        
+                        function setupRealtimeListeners() {
+                            // Listen for temperature updates from ESP8266
+                            const tempRef = window.firebase.ref(window.firebase.rtdb, 'sensors/temperature/value');
+                            window.firebase.onValue(tempRef, (snapshot) => {
+                                if (snapshot.exists()) {
+                                    const tempValue = parseFloat(snapshot.val());
+                                    
+                                    // تحديث جميع العناصر المعنية
+                                    document.getElementById('current-temp').textContent = `${tempValue}°C`;
+                                    document.getElementById('current-temp-display').textContent = `${tempValue}°C`;
+                                    
+                                    // تحديث مؤشر الوقت الفعلي
+                                    const indicator = document.getElementById('realtime-indicator');
+                                    indicator.classList.remove('real-time-inactive');
+                                    indicator.classList.add('real-time-active');
+                                    
+                                    // إذا كان قسم الطقس نشطاً، قم بتحديث التحليل
+                                    if (document.getElementById('weather').classList.contains('active')) {
+                                        setTimeout(() => {
+                                            updateRealTimeAnalysis();
+                                        }, 1000);
+                                    }
+                                }
+                            });
+                            
+                            // Listen for humidity updates
+                            const humidityRef = window.firebase.ref(window.firebase.rtdb, 'sensors/humidity/value');
+                            window.firebase.onValue(humidityRef, (snapshot) => {
+                                if (snapshot.exists()) {
+                                    const humidityValue = parseFloat(snapshot.val());
+                                    document.getElementById('current-humidity-display').textContent = `الرطوبة: ${humidityValue}%`;
+                                    
+                                    // تحديث مؤشر الوقت الفعلي
+                                    const indicator = document.getElementById('realtime-indicator');
+                                    indicator.classList.remove('real-time-inactive');
+                                    indicator.classList.add('real-time-active');
+                                    
+                                    // إذا كان قسم الطقس نشطاً، قم بتحديث التحليل
+                                    if (document.getElementById('weather').classList.contains('active')) {
+                                        setTimeout(() => {
+                                            updateRealTimeAnalysis();
+                                        }, 1000);
+                                    }
+                                }
+                            });
+                            
+                            // Listen for door status
+                            const doorRef = window.firebase.ref(window.firebase.rtdb, 'devices/door/status');
+                            window.firebase.onValue(doorRef, (snapshot) => {
+                                if (snapshot.exists()) {
+                                    const isOpen = snapshot.val() === true || snapshot.val() === 'open';
+                                    
+                                    document.getElementById('door-status').textContent = isOpen ? 'مفتوح' : 'مغلق';
+                                    
+                                    const doorControlStatus = document.getElementById('door-control-status');
+                                    if (isOpen) {
+                                        doorControlStatus.className = 'control-status status-on';
+                                        doorControlStatus.textContent = 'مفتوح';
+                                        
+                                        document.getElementById('open-door-btn').disabled = true;
+                                        document.getElementById('close-door-btn').disabled = false;
+                                    } else {
+                                        doorControlStatus.className = 'control-status status-off';
+                                        doorControlStatus.textContent = 'مغلق';
+                                        
+                                        document.getElementById('open-door-btn').disabled = false;
+                                        document.getElementById('close-door-btn').disabled = true;
+                                    }
+                                }
+                            });
+                            
+                            // Listen for light status
+                            const light1Ref = window.firebase.ref(window.firebase.rtdb, 'devices/light1/status');
+                            window.firebase.onValue(light1Ref, (snapshot) => {
+                                if (snapshot.exists()) {
+                                    const isOn = snapshot.val() === true || snapshot.val() === 'on';
+                                    
+                                    const statusElement = document.getElementById('light1-control-status');
+                                    if (isOn) {
+                                        statusElement.className = 'control-status status-on';
+                                        statusElement.textContent = 'مشغلة';
+                                        document.getElementById('light1-on-btn').disabled = true;
+                                        document.getElementById('light1-off-btn').disabled = false;
+                                    } else {
+                                        statusElement.className = 'control-status status-off';
+                                        statusElement.textContent = 'مطفأة';
+                                        document.getElementById('light1-on-btn').disabled = false;
+                                        document.getElementById('light1-off-btn').disabled = true;
+                                    }
+                                    
+                                    updateLightsStatus();
+                                }
+                            });
+                            
+                            const light2Ref = window.firebase.ref(window.firebase.rtdb, 'devices/light2/status');
+                            window.firebase.onValue(light2Ref, (snapshot) => {
+                                if (snapshot.exists()) {
+                                    const isOn = snapshot.val() === true || snapshot.val() === 'on';
+                                    
+                                    const statusElement = document.getElementById('light2-control-status');
+                                    if (isOn) {
+                                        statusElement.className = 'control-status status-on';
+                                        statusElement.textContent = 'مشغلة';
+                                        document.getElementById('light2-on-btn').disabled = true;
+                                        document.getElementById('light2-off-btn').disabled = false;
+                                    } else {
+                                        statusElement.className = 'control-status status-off';
+                                        statusElement.textContent = 'مطفأة';
+                                        document.getElementById('light2-on-btn').disabled = false;
+                                        document.getElementById('light2-off-btn').disabled = true;
+                                    }
+                                    
+                                    updateLightsStatus();
+                                }
+                            });
+                            
+                            // Update ESP connection status
+                            const espRef = window.firebase.ref(window.firebase.rtdb, 'system/espConnected');
+                            window.firebase.onValue(espRef, (snapshot) => {
+                                const isConnected = snapshot.val();
+                                const espStatus = document.getElementById('esp-status');
+                                
+                                if (isConnected) {
+                                    espStatus.textContent = 'متصل';
+                                    espStatus.style.color = 'var(--success-color)';
+                                } else {
+                                    espStatus.textContent = 'غير متصل';
+                                    espStatus.style.color = 'var(--danger-color)';
+                                }
+                            });
+                        }
+                    </script>
+                </body>
+                </html>
